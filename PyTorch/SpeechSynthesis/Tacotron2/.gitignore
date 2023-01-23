@@ -1,7 +1,8 @@
 __pycache__/
 /checkpoints/
-/output/ac
-/output/testperformance
+/output
+# /output/ac
+# /output/testperformance
 nvlog.json
 .env
 AC-Voice-Cloning-Data/mels/predicted

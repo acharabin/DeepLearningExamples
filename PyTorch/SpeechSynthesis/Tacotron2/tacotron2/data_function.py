@@ -38,7 +38,7 @@ class TextMelLoader(torch.utils.data.Dataset):
         2) normalizes text and converts them to sequences of one-hot vectors
         3) computes mel-spectrograms from audio files.
     """
-    def __init__(self, dataset_path, audiopaths_and_text, args):
+    def __init__(self, dataset_path, audiopaths_and_text, trainset, args):
         self.audiopaths_and_text = load_filepaths_and_text(dataset_path, audiopaths_and_text)
         self.text_cleaners = args.text_cleaners
         self.max_wav_value = args.max_wav_value
@@ -48,6 +48,7 @@ class TextMelLoader(torch.utils.data.Dataset):
             args.filter_length, args.hop_length, args.win_length,
             args.n_mel_channels, args.sampling_rate, args.mel_fmin,
             args.mel_fmax)
+        self.trainset = trainset
 
     def get_mel_text_pair(self, audiopath_and_text):
         # separate filename and text
@@ -149,3 +150,14 @@ def batch_to_gpu(batch):
     y = (mel_padded, gate_padded)
     len_x = torch.sum(output_lengths)
     return (x, y, len_x)
+
+def dataset_with_indices(cls):
+#"""Modifies the given Dataset class to return a tuple data, target, indexinstead of just data, target."""
+
+    def __getitem__(self, index):
+        data, target = cls.__getitem__(self, index)
+        return data, target, text_length, index
+
+    return type(cls.__name__, (cls,), {
+        '__getitem__': __getitem__,
+    })
