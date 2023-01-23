@@ -1,0 +1,1 @@
+AC-Voice-Cloning-Data/mels/train/AC_10.pt|By this time the neighbors were aroused, and several people came to the scene of the affray.

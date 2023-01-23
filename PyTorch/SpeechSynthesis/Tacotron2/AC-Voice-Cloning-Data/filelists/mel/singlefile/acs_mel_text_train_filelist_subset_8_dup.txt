@@ -1,0 +1,2 @@
+AC-Voice-Cloning-Data/mels/train/AC_8.pt|I shall seek assurances of the making and maintenance of agreements which can be mutually relied upon,
+AC-Voice-Cloning-Data/mels/train/AC_8.pt|I shall seek assurances of the making and maintenance of agreements which can be mutually relied upon,

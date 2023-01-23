@@ -1,0 +1,9 @@
+__pycache__/
+/checkpoints/
+/output
+# /output/ac
+# /output/testperformance
+nvlog.json
+.env
+AC-Voice-Cloning-Data/mels/predicted
+AC-Voice-Cloning-Data/wavs/predicted
