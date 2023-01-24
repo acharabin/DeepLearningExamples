@@ -2,7 +2,7 @@
 
 This repository provides additions to NVIDIA/DeepLearningExamples scripts to further optimize training and inferences with Tacotron 2 and WaveGlow v1.6 models. More fundamentally, this repository is designed to provide a recipe for not just how to train a TTS model on an existing open source dataset (i.e. LJ voice), but to be able to easily scale application to new voices through tools for script management, audio editing, transfer learning, and more. As such, the repo comes equipped with a new open source voice dataset (AC voice) and associated models/inferences as a proof of concept.
 
-# Additional Context from Source Repo
+## Additional Context from Source Repo
 
 [Source README.md](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/README_original.md)
 
@@ -21,7 +21,7 @@ This repository provides additions to NVIDIA/DeepLearningExamples scripts to fur
 
 ## Table of Contents
 
-- [Example model inferences](#example-model-inferences)
+- [Example model inference](#example-model-inference)
 - [Getting Started](#getting-started)
    * [Requirements](#requirements)
    * [Quick start guide](#quick-start-guide)
@@ -35,20 +35,33 @@ This repository provides additions to NVIDIA/DeepLearningExamples scripts to fur
    * [Changelog](#changelog)
    * [Known issues](#known-issues)
 
-## Example model inferences
+## Example model inference
+
+[seashells_AC.wav](https://github.com/acharabin/DeepLearningExamples/tree/temp/PyTorch/SpeechSynthesis/Tacotron2/audio/seashells_AC.wav)
 
 ## Getting Started
-   * [Requirements](#requirements)
-   * [Quick start guide](#quick-start-guide)
-   * [Downloading existing models](#downloading-existing-models)
-   * [Recording](#recording)
-   * [Training commands](#training-commands)
+   * Requirements
+   * Quick start guide
+   * Downloading existing models
+   * Recording
+   * Training commands
 
 ## Performance
-   * [Example learning curve](#example-learning-curve)
+   * Example learning curve
 
 ## Additions to source repo
 
+### Analytics tracking
+   * Epoch training loss
+   * Auto upload to s3
+### Warm star
+### Padding adjusted loss
+### Inference using ground truth mels
+### Data Acquisition
+   * Script files
+   * Audio editing
+### Training WaveGlow with predicted mels
+
 ## Release notes
-   * [Changelog](#changelog)
-   * [Known issues](#known-issues)
+   * Changelog
+   * Known issues
