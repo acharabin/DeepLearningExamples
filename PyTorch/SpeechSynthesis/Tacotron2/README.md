@@ -52,14 +52,14 @@ This repository provides additions to NVIDIA/DeepLearningExamples scripts to fur
 ## Additions to source repo
 
 ### Analytics tracking
-   * Epoch training loss
-   * Auto upload to s3
-### Warm star
+#### Epoch training loss
+#### Auto upload to s3
+### Warm start
 ### Padding adjusted loss
 ### Inference using ground truth mels
 ### Data Acquisition
-   * Script files
-   * Audio editing
+#### Script files
+#### Audio editing
 ### Training WaveGlow with predicted mels
 
 ## Release notes
