@@ -154,16 +154,6 @@ class MelAudioLoader(torch.utils.data.Dataset):
                 print('audio segment length before padding: '+str(audio[start:].size(0)))
                 print('padding length added to audio segment: '+str(start + self.segment_length - audio.size(0)))
                 audio_segment_add = torch.nn.functional.pad(audio[start:], (0, start + self.segment_length - audio.size(0)), 'constant').data
-                #audio_segment_add = torch.nn.functional.pad(audio, (start, start + self.segment_length - audio.size(0)), 'constant').data
-                
-            #if audio.size(0) >= self.segment_length:
-                #max_audio_start = audio.size(0) - self.segment_length
-                #audio_start = torch.randint(0, max_audio_start + 1, size=(1,)).item()
-                #audio = audio[audio_start:audio_start+self.segment_length]
-            #else:
-                #audio = torch.nn.functional.pad(
-                    #audio, (0, self.segment_length - audio.size(0)), 'constant').data
-
             audio_segments.append(audio_segment_add)
             segment_length.append(audio_segments[i].size(0))
 
@@ -172,21 +162,9 @@ class MelAudioLoader(torch.utils.data.Dataset):
             if use_predicted_mel: 
                 if predicted_mel.size(1) >= start/self.hop_length:
                     if predicted_mel.size(1) < int((start + self.segment_length)/self.hop_length):
-                        
-                        #text_padded = torch.LongTensor(len(batch), max_input_len)
-                        #text_padded.zero_()
-                        #for i in range(len(ids_sorted_decreasing)):
-                            #text = batch[ids_sorted_decreasing[i]]
-                            #text_padded[i, :text.size(0)] = text
-                        
-
                         mel_segment = predicted_mel[:,int(start/self.hop_length):predicted_mel.size(1)]
-                        #print(mel_segment.size())
-
                         mel_segment_padded = torch.Tensor(mel_segment.size(0), int(self.segment_length/self.hop_length))
                         mel_segment_padded.zero_()
-                        #print(mel_segment_padded.size())
-
                         for i in range(mel_segment.size(0)):
                             mel_channel = mel_segment[i]
                             mel_segment_padded[i, :mel_channel.size(0)] = mel_channel
@@ -206,14 +184,11 @@ class MelAudioLoader(torch.utils.data.Dataset):
                 audio_norm[i] = torch.autograd.Variable(audio_norm[i], requires_grad=False)
                 mel_segments.append(self.stft.mel_spectrogram(audio_norm[i]))
                 mel_segments[i] = mel_segments[i].squeeze(0)
-            
-            #segment_length.append(audio_segments[i].size(0))
 
         return (mel_segments, audio_segments, segment_length)
 
     def __getitem__(self, index):
         return self.get_mel_audio_pair_function(index)
-        #return self.get_mel_audio_pair(self.audiopaths_and_text[index][0])
 
     def __len__(self):
         return len(self.audiopaths_and_text)

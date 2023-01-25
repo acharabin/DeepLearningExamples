@@ -34,19 +34,21 @@ import numpy as np
 from scipy.io.wavfile import write
 import matplotlib
 import matplotlib.pyplot as plt
-
 import sys
-
 import time
 import dllogger as DLLogger
 from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
-
 from waveglow.denoiser import Denoiser
+from tacotron2 import data_function
+import boto3
+import configparser
 
 def parse_args(parser):
     """
     Parse commandline arguments.
     """
+
+    # File Path Parameters
     parser.add_argument('-i', '--input', type=str, required=True,
                         help='full path to the input text (phareses separated by new line)')
     parser.add_argument('-o', '--output', required=True,
@@ -56,23 +58,47 @@ def parse_args(parser):
                         help='full path to the Tacotron2 model checkpoint file')
     parser.add_argument('--waveglow', type=str,
                         help='full path to the WaveGlow model checkpoint file')
+    
+    # Inference Configuration Parameters
     parser.add_argument('-s', '--sigma-infer', default=0.9, type=float)
     parser.add_argument('-d', '--denoising-strength', default=0.01, type=float)
     parser.add_argument('-sr', '--sampling-rate', default=22050, type=int,
                         help='Sampling rate')
+    parser.add_argument('--stft-hop-length', type=int, default=256,
+                        help='STFT hop length for estimating audio length from mel size')
+    parser.add_argument('--use-ground-truth-mels', action='store_true',
+                        help='Uses mel from audio instead of text to evaluate the WaveGlow model')
+    parser.add_argument('--gtm-index', default=0, type=int,
+                        help='Ground truth mel index')
 
+    # Run Mode Parameters
     run_mode = parser.add_mutually_exclusive_group()
     run_mode.add_argument('--fp16', action='store_true',
                         help='Run inference with mixed precision')
     run_mode.add_argument('--cpu', action='store_true',
                         help='Run inference on CPU')
+    run_mode.add_argument('--include-warmup', action='store_true',
+                        help='Include warmup')
 
+    # Dataset Parameters
+    parser.add_argument('--max-wav-value', default=32768.0, type=float,
+                       help='Maximum audiowave value')
+    parser.add_argument('--filter-length', default=1024, type=int,
+                       help='Filter length')
+    parser.add_argument('--hop-length', default=256, type=int,
+                       help='Hop (stride) length')
+    parser.add_argument('--win-length', default=1024, type=int,
+                       help='Window length')
+    parser.add_argument('--mel-fmin', default=0.0, type=float,
+                       help='Minimum mel frequency')
+    parser.add_argument('--mel-fmax', default=8000.0, type=float,
+                       help='Maximum mel frequency')
+    
+    # Analytics Parameters
+    parser.add_argument('--upload-to-s3', action='store_true',
+                          help='Uploads inferences and alignments to s3')
     parser.add_argument('--log-file', type=str, default='nvlog.json',
                         help='Filename for logging')
-    parser.add_argument('--include-warmup', action='store_true',
-                        help='Include warmup')
-    parser.add_argument('--stft-hop-length', type=int, default=256,
-                        help='STFT hop length for estimating audio length from mel size')
 
     return parser
 
@@ -107,9 +133,10 @@ def unwrap_distributed(state_dict):
 
 
 def load_and_setup_model(model_name, parser, checkpoint, fp16_run, cpu_run, forward_is_infer=False):
+    
     model_parser = models.model_parser(model_name, parser, add_help=False)
     model_args, _ = model_parser.parse_known_args()
-
+    
     model_config = models.get_model_config(model_name, model_args)
     model = models.get_model(model_name, model_config, cpu_run=cpu_run,
                              forward_is_infer=forward_is_infer)
@@ -196,6 +223,10 @@ def main():
         description='PyTorch Tacotron 2 Inference')
     parser = parse_args(parser)
     args, _ = parser.parse_known_args()
+    
+    if args.upload_to_s3:
+        envparser = configparser.ConfigParser()
+        envparser.read('.env')
 
     log_file = os.path.join(args.output, args.log_file)
     DLLogger.init(backends=[JSONStreamBackend(Verbosity.DEFAULT, log_file),
@@ -203,42 +234,72 @@ def main():
     for k,v in vars(args).items():
         DLLogger.log(step="PARAMETER", data={k:v})
     DLLogger.log(step="PARAMETER", data={'model_name':'Tacotron2_PyT'})
-
-    tacotron2 = load_and_setup_model('Tacotron2', parser, args.tacotron2,
-                                     args.fp16, args.cpu, forward_is_infer=True)
+    
+    #tacotron2 = load_and_setup_model('Tacotron2', parser, args.tacotron2,
+                                     #args.fp16, args.cpu, forward_is_infer=True)
     waveglow = load_and_setup_model('WaveGlow', parser, args.waveglow,
                                     args.fp16, args.cpu, forward_is_infer=True)
     denoiser = Denoiser(waveglow)
     if not args.cpu:
         denoiser.cuda()
+    
+    if args.use_ground_truth_mels:
+        
+        model_name = 'Tacotron2'
+        parser = models.model_parser(model_name, parser)
+        args, _ = parser.parse_known_args()
 
-    jitted_tacotron2 = torch.jit.script(tacotron2)
+        args.text_cleaners = ['english_cleaners']
+        args.load_mel_from_disk=False
 
-    texts = []
-    try:
-        f = open(args.input, 'r')
-        texts = f.readlines()
-    except:
-        print("Could not read file")
-        sys.exit(1)
+        dataset=data_function.TextMelLoader('', args.input, True, args)
+        
+        audiopaths_and_text=data_function.load_filepaths_and_text('', args.input) 
+        
+        audiopath_and_text=audiopaths_and_text[args.gtm_index][0]
 
-    if args.include_warmup:
-        sequence = torch.randint(low=0, high=148, size=(1,50)).long()
-        input_lengths = torch.IntTensor([sequence.size(1)]).long()
-        if not args.cpu:
-            sequence = sequence.cuda()
-            input_lengths = input_lengths.cuda()
-        for i in range(3):
-            with torch.no_grad():
-                mel, mel_lengths, _ = jitted_tacotron2(sequence, input_lengths)
-                _ = waveglow(mel)
+        mel = dataset.get_mel(audiopath_and_text)
+        
+        mel = mel.unsqueeze(0)
+        
+        print(mel.size())
+        
+        mel_lengths = [mel.size(2)]
 
-    measurements = {}
+        measurements={}
 
-    sequences_padded, input_lengths = prepare_input_sequence(texts, args.cpu)
+    else: 
 
-    with torch.no_grad(), MeasureTime(measurements, "tacotron2_time", args.cpu):
-        mel, mel_lengths, alignments = jitted_tacotron2(sequences_padded, input_lengths)
+        tacotron2 = load_and_setup_model('Tacotron2', parser, args.tacotron2,
+                                     args.fp16, args.cpu, forward_is_infer=True)
+
+        jitted_tacotron2 = torch.jit.script(tacotron2)
+
+        texts = []
+        try:
+            f = open(args.input, 'r')
+            texts = f.readlines()
+        except:
+            print("Could not read file")
+            sys.exit(1)
+
+        if args.include_warmup:
+            sequence = torch.randint(low=0, high=148, size=(1,50)).long()
+            input_lengths = torch.IntTensor([sequence.size(1)]).long()
+            if not args.cpu:
+                sequence = sequence.cuda()
+                input_lengths = input_lengths.cuda()
+            for i in range(3):
+                with torch.no_grad():
+                    mel, mel_lengths, _ = jitted_tacotron2(sequence, input_lengths)
+                    _ = waveglow(mel)
+
+        measurements = {}
+
+        sequences_padded, input_lengths = prepare_input_sequence(texts, args.cpu)
+
+        with torch.no_grad(), MeasureTime(measurements, "tacotron2_time", args.cpu):
+            mel, mel_lengths, alignments = jitted_tacotron2(sequences_padded, input_lengths)
 
     with torch.no_grad(), MeasureTime(measurements, "waveglow_time", args.cpu):
         audios = waveglow(mel, sigma=args.sigma_infer)
@@ -247,26 +308,49 @@ def main():
         audios = denoiser(audios, strength=args.denoising_strength).squeeze(1)
 
     print("Stopping after",mel.size(2),"decoder steps")
-    tacotron2_infer_perf = mel.size(0)*mel.size(2)/measurements['tacotron2_time']
+    if args.use_ground_truth_mels == False:
+        tacotron2_infer_perf = mel.size(0)*mel.size(2)/measurements['tacotron2_time']
+        DLLogger.log(step=0, data={"tacotron2_items_per_sec": tacotron2_infer_perf})
+        DLLogger.log(step=0, data={"tacotron2_latency": measurements['tacotron2_time']})
+    
     waveglow_infer_perf = audios.size(0)*audios.size(1)/measurements['waveglow_time']
 
-    DLLogger.log(step=0, data={"tacotron2_items_per_sec": tacotron2_infer_perf})
-    DLLogger.log(step=0, data={"tacotron2_latency": measurements['tacotron2_time']})
     DLLogger.log(step=0, data={"waveglow_items_per_sec": waveglow_infer_perf})
     DLLogger.log(step=0, data={"waveglow_latency": measurements['waveglow_time']})
     DLLogger.log(step=0, data={"denoiser_latency": measurements['denoiser_time']})
-    DLLogger.log(step=0, data={"latency": (measurements['tacotron2_time']+measurements['waveglow_time']+measurements['denoiser_time'])})
+    if args.use_ground_truth_mels == False:
+        DLLogger.log(step=0, data={"latency": (measurements['tacotron2_time']+measurements['waveglow_time']+measurements['denoiser_time'])})
 
     for i, audio in enumerate(audios):
+        
+        if args.upload_to_s3:
+            s3 = boto3.client('s3',aws_access_key_id=envparser.get('s3', 'aws_access_key_id'),
+                            aws_secret_access_key=envparser.get('s3', 'aws_secret_access_key'))
+            s3_bucket=envparser.get('s3', 'bucket')
+            s3_prefix=envparser.get('s3', 'prefix')
 
-        plt.imshow(alignments[i].float().data.cpu().numpy().T, aspect="auto", origin="lower")
-        figure_path = os.path.join(args.output,"alignment_"+str(i)+args.suffix+".png")
-        plt.savefig(figure_path)
+        if args.use_ground_truth_mels == False:
+            plt.imshow(alignments[i].float().data.cpu().numpy().T, aspect="auto", origin="lower")
+            figure_path = os.path.join(args.output,"alignment_"+str(i)+args.suffix+".png")
+            plt.savefig(figure_path)
+            if args.upload_to_s3 == True:
+                try:
+                    s3.upload_file("/workspace/tacotron2/{}".format(figure_path),s3_bucket,"{}/{}".format(s3_prefix, figure_path))
+                    print("Uploaded alignment to {}/{}/{}".format(s3_bucket, s3_prefix, figure_path))
+                except Exception as e:
+                    print(e)
 
         audio = audio[:mel_lengths[i]*args.stft_hop_length]
         audio = audio/torch.max(torch.abs(audio))
         audio_path = os.path.join(args.output,"audio_"+str(i)+args.suffix+".wav")
         write(audio_path, args.sampling_rate, audio.cpu().numpy())
+
+        if args.upload_to_s3 == True:
+            try:
+                s3.upload_file("/workspace/tacotron2/{}".format(audio_path),s3_bucket,"{}/{}".format(s3_prefix, audio_path))
+                print("Uploaded inference to {}/{}/{}".format(s3_bucket, s3_prefix, audio_path))
+            except Exception as e:
+                print(e)
 
     DLLogger.flush()
 
