@@ -34,10 +34,10 @@ For those new to TTS and Tacotron2/WaveGlow, it's recommended to read the initia
 - [Example model inference](#example-model-inference)
 - [Getting Started](#getting-started)
    * [Requirements](#requirements)
-   * [Quick start guide](#quick-start-guide)
-   * [Downloading existing models](#downloading-existing-models)
+   * [Initial setup](#initial-setup)
    * [Voice recording](#voice-recording)
    * [Training commands](#training-commands)
+   * [Inference command](#inference-command)
 - [Performance](#performance)
    * [Example learning curve](#example-learning-curve)
 - [Additions to source repo](#additions-to-source-repo)
@@ -71,12 +71,9 @@ For more information about how to get started with NGC containers, see the
 following sections from the NVIDIA GPU Cloud Documentation and the Deep Learning
 Documentation:
 
-### Quick start guide
+### Initial setup
 
-To train your model using mixed precision with Tensor Cores or using FP32,
-perform the following steps using the default parameters of the Tacrotron 2
-and WaveGlow model on the [LJ Speech](https://keithito.com/LJ-Speech-Dataset/)
-dataset.
+Complete the following steps to get ready for model training with a voice dataset. 
 
 1. Clone the repository.
    ```bash
@@ -84,33 +81,12 @@ dataset.
    cd DeepLearningExamples/PyTorch/SpeechSynthesis/Tacotron2
    ```
 
-2. Download existing models for warm start
-   Existing models can be downloaded [here](https://drive.google.com/drive/folders/1oj0NU7eQ_KpI3WPvJOFNYpz7gOi9ui6l)
-
-   s3 can be used as an intermediary between a local computer and cloud compute instance.
-   
-   s3 download
-   ```bash
-   import boto3
-   s3 = boto3.client('s3',aws_access_key_id=<aws_access_key_id>,aws_secret_access_key=<aws_secret_access_key>)
-   file_name='waveglow_1076430_14000_amp.pt'
-   s3.upload_file(f"""<path>/{file_name}""",'<s3 bucket>',f"""<prefix>/{file_name}""")
-   ```
-
-   s3 upload
-   ```bash
-   import boto3
-   s3 = boto3.client('s3',aws_access_key_id=<aws_access_key_id>,aws_secret_access_key=<aws_secret_access_key>)
-   file_name='waveglow_1076430_14000_amp.pt'
-   s3.download_file(<s3 bucket>, f"""<prefix>/{file_name}""", f"""<path>/{file_name}""")secret
-   ```
-
-3. Build the Tacotron 2 and WaveGlow PyTorch NGC container.
+2. Build the Tacotron 2 and WaveGlow PyTorch NGC container.
    ```bash
    bash scripts/docker/build.sh
    ```
 
-4. Start an interactive session in the NGC container to run training/inference.
+3. Start an interactive session in the NGC container to run training/inference.
 After you build the container image, you can start an interactive CLI session with:
 
    ```bash
@@ -125,74 +101,52 @@ After you build the container image, you can start an interactive CLI session wi
    
    It can be detached by click CTRL + p then CTRL + q.
 
-5. Start training.
-To start Tacotron 2 training, run:
-   ```bash
-   bash scripts/train_tacotron2.sh
-   ```
+4. (Optional) Set s3 bucket credentials
+   
+   If your compute instance is associated with an AWS account, it's recommended to connect your s3 bucket to reduce file transfer admin. 
 
-   To start WaveGlow training, run:
-   ```bash
-   bash scripts/train_waveglow.sh
-   ```
-
-6. Start validation/evaluation.
-Ensure your loss values are comparable to those listed in the table in the
-[Results](#results) section. For both models, the loss values are stored in the `./output/nvlog.json` log file.
-
-   After you have trained the Tacotron 2 and WaveGlow models, you should get
-   audio results similar to the
-   samples in the `./audio` folder. For details about generating audio, see the
-   [Inference process](#inference-process) section below.
-
-   The training scripts automatically run the validation after each training
-   epoch. The results from the validation are printed to the standard output
-   (`stdout`) and saved to the log files.
-
-7. Start inference.
-After you have trained the Tacotron 2 and WaveGlow models, you can perform
-inference using the respective checkpoints that are passed as `--tacotron2`
-and `--waveglow` arguments. Tacotron2 and WaveGlow checkpoints can also be downloaded from NGC:
-
-   https://ngc.nvidia.com/catalog/models/nvidia:tacotron2pyt_fp16/files?version=3
-
-   https://ngc.nvidia.com/catalog/models/nvidia:waveglow256pyt_fp16/files?version=2
-
-   To run inference issue:
+   Run vim .env to open a .env file in linux, press i, and paste the following:
 
    ```bash
-   python inference.py --tacotron2 <Tacotron2_checkpoint> --waveglow <WaveGlow_checkpoint> --wn-channels 256 -o output/ -i phrases/phrase.txt --fp16
+   vim .env
+   [s3]
+   bucket = <s3 bucket>
+   prefix = <folder>
+   aws_access_key_id = <aws_access_key_id>
+   aws_secret_access_key = <aws_secret_access_key>
+   ```
+   
+   press ESC then type :wq then Enter to save the file. 
+
+5. (Optional) Download existing models
+
+   Existing models can be downloaded [here](https://drive.google.com/drive/folders/1oj0NU7eQ_KpI3WPvJOFNYpz7gOi9ui6l) to use for warm start or inference testing.
+
+   s3 can be used as an intermediary between a local computer and cloud compute instance.
+
+   Example s3 download
+   ```bash
+   import boto3
+   s3 = boto3.client('s3',aws_access_key_id=<aws_access_key_id>,aws_secret_access_key=<aws_secret_access_key>)
+   file_name='waveglow_1076430_14000_amp.pt'
+   s3.upload_file(f"""<path>/{file_name}""",'<s3 bucket>',f"""<prefix>/{file_name}""")
    ```
 
-### Downloading Existing Models
-
-Existing models can be downloaded [here](https://drive.google.com/drive/folders/1oj0NU7eQ_KpI3WPvJOFNYpz7gOi9ui6l) to use for warm start or inference testing.
-
-s3 can be used as an intermediary between a local computer and cloud compute instance.
-
-s3 download
-```bash
-import boto3
-s3 = boto3.client('s3',aws_access_key_id=<aws_access_key_id>,aws_secret_access_key=<aws_secret_access_key>)
-file_name='waveglow_1076430_14000_amp.pt'
-s3.upload_file(f"""<path>/{file_name}""",'<s3 bucket>',f"""<prefix>/{file_name}""")
-```
-
-s3 upload
-```bash
-import boto3
-s3 = boto3.client('s3',aws_access_key_id=<aws_access_key_id>,aws_secret_access_key=<aws_secret_access_key>)
-file_name='waveglow_1076430_14000_amp.pt'
-s3.download_file(<s3 bucket>, f"""<prefix>/{file_name}""", f"""<path>/{file_name}""")secret
-```
+   Example s3 upload
+   ```bash
+   import boto3
+   s3 = boto3.client('s3',aws_access_key_id=<aws_access_key_id>,aws_secret_access_key=<aws_secret_access_key>)
+   file_name='waveglow_1076430_14000_amp.pt'
+   s3.download_file(<s3 bucket>, f"""<prefix>/{file_name}""", f"""<path>/{file_name}""")secret
+   ```
 
 ### Voice Recording
 
-AC-Voice-Cloning-Data is available in the repo for use in model training. To record and use a new voice, make a copy of the AC-Voice-Cloning-Data folder and replace existing recordings in AC-Voice-Cloning-Data/wavs/train with new .wav voice recordings for each passage in AC-Voice-Cloning-Data/filelists/acs_audio_text_train_filelists.txt. Repeat for the validation filelist. Then end result is ~ 2.4 hours of recorded audio which takes ~ 8-10 hours of recording time. Additional tools and tips for recording, file administration, and audio editing will be added at a later time. 
+AC-Voice-Cloning-Data is available in the repo for use in model training. To record and use a new voice, make a copy of the AC-Voice-Cloning-Data folder and replace existing recordings in AC-Voice-Cloning-Data/wavs/train with new .wav voice recordings for each passage in AC-Voice-Cloning-Data/filelists/acs_audio_text_train_filelists.txt. Repeat for the validation filelist. Then end result is ~ 2.4 hours of recorded audio which takes ~ 8-10 hours of recording time.mels can then be generated in advance by running the scripts/prepare_mels_ac.sh file after ensuring the script references the new folder. Additional tools and tips for recording, file administration, and audio editing will be added at a later time. 
 
 ### Training commands
 
-#### 8 X NVIDIA V4 GPUs / AWS p3dn.xlarge instance
+#### 8 X NVIDIA V100 GPUs / AWS p3dn.24xlarge instance
 
 When using distributed training, one batch is allocated to each GPU and each update step includes the batches allocated to each GPU. The true batch size is thus the selected batch size mutliplied by the number of GPUs. 
 
@@ -210,9 +164,23 @@ WaveGlow
 python -m multiproc train.py -m WaveGlow -o output/ -lr 1e-4 --epochs 751 --epochs-per-checkpoint 50 -bs 3 --segment-length 8000 --weight-decay 0 --grad-clip-thresh 65504.0 --cudnn-enabled --cudnn-benchmark --log-file waveglowlog.json --training-files AC-Voice-Cloning-Data/filelists/audio/acs_audio_text_train_filelist.txt --validation-files AC-Voice-Cloning-Data/filelists/audio/acs_audio_text_validation_filelist.txt --anneal-steps 200 --anneal-factor 0.1 --amp --upload-epoch-loss-to-s3 --warm-start --ignore-layers [] --checkpoint-path output/waveglow_1076430_14000_amp.pt --wn-channels 256 --epoch-loss-samples 1249
 ```
 
-To continue training from the last saved checkpoint, remove the --warm-start and --checkpoint-path arguments and add the --resume-from-last argument.  
+To continue training from the last saved checkpoint, remove the --warm-start and --checkpoint-path arguments and add the --resume-from-last argument. --uploadepoch-loss-to-s3 argument should be removed if s3 credentials weren't added in the .env file. 
+
+### Inference command
+
+The following command can be used to get an inference with a Tacotron2 and WaveGlow checkpoint. 
+
+```bash
+python inference.py --tacotron2 <Tacotron2_checkpoint> --waveglow <WaveGlow_checkpoint> --wn-channels 256 -o output/ --include-warmup -i phrases/phrase.txt --upload-to-s3 --suffix _letters --fp16
+```
+
+--upload-to-s3 should be removed if s3 credentials weren't added in the .env file.
 
 ## Performance
+
+The following results are using 8 X NVIDIA V100 GPUs (AWS p3dn.24xlarge instance) and ~ the training commands above. Tacotron2 training took 0.00698 hrs/epoch and WaveGlow training took 0.00488 hrs/epoch, derived from the date stamps outputted in the epochresults{modelname}.csv file. 
+
+Entire training set epoch loss was computed after the fact using saved checkpoints vs. saving during training which is now supported by the repo. As a result, a smooth/complete learning curve is lost. However, the data is still presented as it can serve as a useful training benchmark.  
 
 ### Example learning curve
 
@@ -228,9 +196,9 @@ To continue training from the last saved checkpoint, remove the --warm-start and
 
 Having an accurate, ongoing, and easily accessible log of model training loss as Tacotron2 and WaveGlow models train is essential to properly supervise model training and ensure efficient use of GPUs. If training loss has converged, hits a spike, or isn't meeting expectations/requirements, the training overseer needs to take action by adjusting hyperparameters, changing the model setup, or halting training. 
 
-The source repo provides logging of the training loss at each batch prior to update steps, and provides an epoch loss summary using the loss obtained from the last batch. While validation loss across all validation samples is logged at the end of each epoch, NVIDIA Tacotron2 repositories and the official paper only reference training loss as the benchmark for model convergence. As the batch size decreases, batch training loss deviates farther from complete training loss. The training overseer can no longer reliably monitor how the well model fits the data over time. The problem is exacerbated in WaveGlow where an additional stochastic element is added to the batching process; for each epoch/passage, a sample of frames of a fixed 'segment length' (typically between 4K and 16K) are taken from each passage and used training. Note that with a sampling rate of 22050 audio frames per segment, a segment length of 4K would result in passage segments that are less than 1/5th of a second. While this added stochastic element defends against overfitting and supports model generalization, it further degrades the usefulness of batch training loss to guage model learning. 
+The source repo provides logging of the training loss at each batch prior to update steps as well as loss at the end of each epoch. While the repo states that 'training loss is averaged over an entire training epoch', it is clear upon further investigation that the epoch loss provided references the last batch's loss. While validation loss across all validation samples is logged at the end of each epoch, NVIDIA Tacotron2 repositories and the official paper only reference training loss as the benchmark for model convergence. As the batch size decreases, batch training loss deviates farther from complete training loss. The training overseer can no longer reliably monitor how the well model fits the data over time. The problem is exacerbated in WaveGlow where an additional stochastic element is added to the batching process; for each epoch/passage, a sample of frames of a fixed 'segment length' (typically between 4K and 16K) are taken from each passage and used training. Note that with a sampling rate of 22050 audio frames per segment, a segment length of 4K would result in passage segments that are less than 1/5th of a second. While this added stochastic element defends against overfitting and supports model generalization, it further degrades the usefulness of batch training loss to guage model learning. 
 
-The resolution implemented was adding an additional step after all batches in an epoch are completed to compute the training loss across a random sample of (or all) training passages based on the --epoch-loss-samples argument. Furthermore, results are appended to a file epochtrainingloss{modelname}.csv in the selected output directory at the end of each epoch. If --upload-to-s3 argument is used, the compute instance is associated with an AWS account, and associated s3 bucket and key information is provided in the Tacotron2/.env file, epoch loss will automatically be uploaded to s3 after each epoch so it can be connected to analytics tools for learning curve visualization (i.e. Tableau, Jupyter Notebook). Ammendments can be found in the following file: [tacotron2/train.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/train.py)
+The resolution implemented was adding an additional step after all batches in an epoch are completed to compute the training loss across a random sample of (or all) training passages based on the --epoch-loss-samples argument. A separate batch size is used with a default value of 49, which can be adjusted using the --elbs command. Furthermore, results are appended to a file epochtrainingloss{modelname}.csv in the selected output directory at the end of each epoch. If --upload-to-s3 argument is used, the compute instance is associated with an AWS account, and associated s3 bucket and key information is provided in the Tacotron2/.env file, epoch loss will automatically be uploaded to s3 after each epoch so it can be connected to analytics tools for learning curve visualization (i.e. Tableau, Jupyter Notebook). Ammendments can be found in the following file: [tacotron2/train.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/train.py)
 
 ### Padding adjusted loss
 
@@ -246,7 +214,7 @@ Warm start code from [NVIDIA/Tacotron2](https://github.com/NVIDIA/tacotron2) int
 
 ### Inference using ground truth mels
 
-To guage whether Tacotron2 or WaveGlow is the bottleneck for improved inference quality, your WaveGlow model can be run on ground truth mels for a selected passage. The difference between inferences obtained using ground truth mels and those obtained using Tacotron2 infered mels tells you the inference quality improvement that would be achieved if Tacotron2 was trained to perfectly match the actual audio. Furthermore, the difference between the inferences obtained using the ground truth mels and the ground truth audio tells you the inference quality improvement that would be achieved if the neural vocoder (in this case WaveGlow) was trained to perfectly match the actual audio. Whichever model is farther away from it's 'ideal' model based on an opinion score should be the focus for additional tuning efforts.  
+To guage whether Tacotron2 or WaveGlow is the bottleneck for improved inference quality, WaveGlow checkpoints can be run using ground truth mels for a selected passage. The difference between inferences obtained using ground truth mels and those obtained using Tacotron2 infered mels tells you the inference quality improvement that would be achieved if Tacotron2 was trained to perfectly match the actual audio. Furthermore, the difference between the inferences obtained using the ground truth mels and the ground truth audio tells you the inference quality improvement that would be achieved if the neural vocoder (in this case WaveGlow) was trained to perfectly match the actual audio. Whichever model is farther away from it's 'ideal' model based on an opinion score should be the focus for additional tuning efforts.  
 
 See below for an example inference command using ground truth mels. 
 
