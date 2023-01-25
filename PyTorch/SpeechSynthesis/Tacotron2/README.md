@@ -1,6 +1,6 @@
 # Tacotron 2 And WaveGlow For PyTorch
 
-This repository provides additions to NVIDIA/DeepLearningExamples scripts to further optimize training and inferences with Tacotron 2 and WaveGlow v1.6 models. More fundamentally, this repository is designed to provide a recipe for not just how to train a TTS model on an existing open source dataset (i.e. LJ voice), but to be able to easily scale application to new voices through tools for script management, audio editing, transfer learning, and more. As such, the repo comes equipped with a new open source voice dataset (AC voice) and associated models/inferences as a proof of concept.
+This repository provides additions to NVIDIA/DeepLearningExamples scripts to further optimize training and inferences with Tacotron 2 and WaveGlow v1.6 models. More fundamentally, this repository is designed to provide a recipe for not just how to train a text-to-speech (TTS) model using an existing open source dataset (i.e. LJ voice), but to be able to easily scale application to new voices through tools for script management, audio editing, transfer learning, and more. As such, the repo comes equipped with a new open source voice dataset (AC voice) and associated models/inferences as a proof of concept.
 
 ## Source Repo
 
@@ -181,7 +181,9 @@ WaveGlow
 python -m multiproc train.py -m WaveGlow -o output/ -lr 1e-4 --epochs 751 --epochs-per-checkpoint 50 -bs 3 --segment-length 8000 --weight-decay 0 --grad-clip-thresh 65504.0 --cudnn-enabled --cudnn-benchmark --log-file waveglowlog.json --training-files AC-Voice-Cloning-Data/filelists/audio/acs_audio_text_train_filelist.txt --validation-files AC-Voice-Cloning-Data/filelists/audio/acs_audio_text_validation_filelist.txt --anneal-steps 200 --anneal-factor 0.1 --amp --upload-epoch-loss-to-s3 --warm-start --ignore-layers [] --checkpoint-path output/waveglow_1076430_14000_amp.pt --wn-channels 256 --epoch-loss-samples 1249
 ```
 
-To continue training from the last saved checkpoint, remove the --warm-start and --checkpoint-path arguments and add the --resume-from-last argument. --uploadepoch-loss-to-s3 argument should be removed if s3 credentials weren't added in the .env file. 
+To continue training from the last saved checkpoint, remove the --warm-start and --checkpoint-path arguments and add the --resume-from-last argument. 
+
+--uploadepoch-loss-to-s3 argument should be removed if s3 credentials weren't added in the .env file. 
 
 ### Inference command
 
@@ -195,7 +197,7 @@ python inference.py --tacotron2 <Tacotron2_checkpoint> --waveglow <WaveGlow_chec
 
 ## Performance
 
-The following results are using 8 X NVIDIA V100 GPUs (AWS p3dn.24xlarge instance) and ~ the training commands above. Tacotron2 training took 0.00698 hrs/epoch and WaveGlow training took 0.00488 hrs/epoch, derived from the date stamps outputted in the epochresults{modelname}.csv file. 
+The following results were obtained using 8 X NVIDIA V100 GPUs (AWS p3dn.24xlarge instance) and ~ the training commands above. Tacotron2 training took 0.00698 hrs/epoch and WaveGlow training took 0.00488 hrs/epoch, derived from the date stamps outputted in the epochresults{modelname}.csv file. 
 
 Entire training set epoch loss was computed after the fact using saved checkpoints vs. saving during training which is now supported by the repo. As a result, a smooth/complete learning curve is lost. However, the data is still presented as it can serve as a useful training benchmark.  
 
