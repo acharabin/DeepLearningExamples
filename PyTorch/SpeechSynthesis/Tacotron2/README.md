@@ -36,6 +36,9 @@ For those new to TTS and Tacotron2/WaveGlow, it's recommended to read the initia
    * [Requirements](#requirements)
    * [Initial setup](#initial-setup)
    * [Voice recording](#voice-recording)
+   * [Training hyperparameters](#training-hyperparameters)
+      * [Batch size](#batch-size)
+      * [Learning rate annealing](#learning-rate-annealing)
    * [Training commands](#training-commands)
    * [Inference command](#inference-command)
 - [Performance](#performance)
@@ -101,11 +104,11 @@ After you build the container image, you can start an interactive CLI session wi
    
    It can be detached by click CTRL + p then CTRL + q.
 
-4. (Optional) Set s3 bucket credentials
+4. (Optional) Set s3 bucket credentials.
    
    If your compute instance is associated with an AWS account, it's recommended to connect your s3 bucket to reduce file transfer admin. 
 
-   Run vim .env to open a .env file in linux, press i, and paste the following:
+   Run vim .env to open a .env file in linux, press i, and paste the following after filling in the entries:
 
    ```bash
    vim .env
@@ -118,7 +121,7 @@ After you build the container image, you can start an interactive CLI session wi
    
    press ESC then type :wq then Enter to save the file. 
 
-5. (Optional) Download existing models
+5. (Optional) Download existing models.
 
    Existing models can be downloaded [here](https://drive.google.com/drive/folders/1oj0NU7eQ_KpI3WPvJOFNYpz7gOi9ui6l) to use for warm start or inference testing.
 
@@ -142,15 +145,29 @@ After you build the container image, you can start an interactive CLI session wi
 
 ### Voice Recording
 
-AC-Voice-Cloning-Data is available in the repo for use in model training. To record and use a new voice, make a copy of the AC-Voice-Cloning-Data folder and replace existing recordings in AC-Voice-Cloning-Data/wavs/train with new .wav voice recordings for each passage in AC-Voice-Cloning-Data/filelists/acs_audio_text_train_filelists.txt. Repeat for the validation filelist. Then end result is ~ 2.4 hours of recorded audio which takes ~ 8-10 hours of recording time.mels can then be generated in advance by running the scripts/prepare_mels_ac.sh file after ensuring the script references the new folder. Additional tools and tips for recording, file administration, and audio editing will be added at a later time. 
+AC-Voice-Cloning-Data is available in the repo for use in model training. To record and use a new voice, make a copy of the AC-Voice-Cloning-Data folder and replace existing recordings in AC-Voice-Cloning-Data/wavs/train with new .wav voice recordings for each passage in AC-Voice-Cloning-Data/filelists/acs_audio_text_train_filelists.txt. Repeat for the validation filelist. The end result is ~ 2.4 hours of recorded audio which takes ~ 8-10 hours of recording time. Mels can be generated in advance by running the scripts/prepare_mels_ac.sh file after ensuring the script references the new audio folder. Additional tools and tips for recording, file administration, and audio editing will be added at a later time. 
+
+### Training hyperparameters
+
+Hyperparameters recommended in the official Tacotron2 and WaveGlow papers were used as a starting point with some caveats noted below.  
+
+#### Batch size
+
+When using distributed training, one batch is allocated to each GPU and each update step includes the batches allocated to each GPU. The true batch size is thus the selected batch size mutliplied by the number of GPUs.
+
+The official Tacotron2 and WaveGlow papers referenced using a batch size of 64 and 24, respectively. Using distributed training with 8 GPUs, the equivalent batch size arguments are 8 and 3, respectively.
+
+#### Learning Rate Annealing
+
+For Tacotron2, a reduction in the learning rate by 50% every 500 epochs is imposed.
+
+For WaveGlow, a reduction in the learning rate by 10% is made at epoch 200 (when loss plateaus) to allow for fine tuning. This was inspired by the WaveGlow official paper - 'When training appeared to plateau, the learning rate was further reduced to 5 × 10−5.'
+
+Note that these recommendations assume warm starting using an existing model (i.e. NVIDIA/LJ Voice).    
 
 ### Training commands
 
 #### 8 X NVIDIA V100 GPUs / AWS p3dn.24xlarge instance
-
-When using distributed training, one batch is allocated to each GPU and each update step includes the batches allocated to each GPU. The true batch size is thus the selected batch size mutliplied by the number of GPUs. 
-
-The official Tacotron2 and WaveGlow papers used a batch size of 64 and 24, respectively. Using distributed training with 8 GPUs, the equivalent batch size arguments are 8 and 3, respectively.  
 
 NVIDIA/LJ Voice models are used for warm start.
 
