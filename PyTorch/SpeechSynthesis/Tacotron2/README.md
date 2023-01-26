@@ -281,8 +281,16 @@ python save_predicted_mels.py -i AC-Voice-Cloning-Data/filelists/audio/acs_audio
 
 Train WaveGlow with predicted mel/audio segments
 ```bash
-python -m multiproc train.py -m WaveGlow -o output/ -lr 1e-4 --epochs 1001 --epochs-per-checkpoint 50 -bs 3 --segment-length 32768 --weight-decay 0 --grad-clip-thresh 65504.0 --cudnn-enabled --cudnn-benchmark --log-file waveglowlog.json --training-files AC-Voice-Cloning-Data/filelists/audio/acs_audio_text_train_filelist.txt --validation-files AC-Voice-Cloning-Data/filelists/audio/acs_audio_segment_text_validation_filelist.txt --amp --upload-epoch-loss-to-s3 --warm-start --ignore-layers [] --checkpoint-path <WaveGlow_checkpoint> --wn-channels 256 --use-predicted-mels```
+python -m multiproc train.py -m WaveGlow -o output/ -lr 1e-4 --epochs 1001 --epochs-per-checkpoint 50 -bs 3 --segment-length 32768 --weight-decay 0 --grad-clip-thresh 65504.0 --cudnn-enabled --cudnn-benchmark --log-file waveglowlog.json --training-files AC-Voice-Cloning-Data/filelists/audio/acs_audio_text_train_filelist.txt --validation-files AC-Voice-Cloning-Data/filelists/audio/acs_audio_segment_text_validation_filelist.txt --amp --upload-epoch-loss-to-s3 --warm-start --ignore-layers [] --checkpoint-path <WaveGlow_checkpoint> --wn-channels 256 --use-predicted-mels
+```
 
 ## Release notes
-   * Changelog
-   * Known issues
+
+### Changelog
+
+January, 2023
+   * Initial release
+
+### Known issues
+
+There are no known issues in this release.
