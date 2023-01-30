@@ -82,14 +82,9 @@ class Tacotron2Loss_passage(nn.Module):
 
         mel_out, mel_out_postnet, gate_out, _ = model_output
         gate_out = gate_out.view(-1, 1)
-        #mel_loss = nn.MSELoss(reduction='none')(mel_out, mel_target) + \
-            #nn.MSELoss(reduction='none')(mel_out_postnet, mel_target)
-        #gate_loss = nn.BCEWithLogitsLoss()(gate_out, gate_target)
-
+        
         lossdf=pd.DataFrame({'i':[], 'count_i':[],'count_non0_i':[], 'nonpadded_f':[],'mel_loss_i':[],'mel_postnet_loss_i':[],'gate_loss':[],'total_loss_i':[]})
         
-        #return print(mel_target[0].size())
-
         nonpadded_f=[0]*len(mel_target)
 
         for i, mel in enumerate(mel_target):
@@ -104,12 +99,7 @@ class Tacotron2Loss_passage(nn.Module):
         print('melbincount: '+str(len(mel_target[i])))
         
         print(gate_target.size())
-        #print(gate_target)
         
-        #return print(nonzero[0])
-
-        #mel_target[i].count_nonzero().cpu().detach().item()
-
         for i in range(0,len(mel_target)):
             gate_loss = nn.BCEWithLogitsLoss()(gate_out, gate_target).cpu().detach().item()
             if loss_function=='mse':
