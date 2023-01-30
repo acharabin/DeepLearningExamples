@@ -199,8 +199,8 @@ python inference.py --tacotron2 <Tacotron2_checkpoint> --waveglow <WaveGlow_chec
 
 The following results were obtained using 8 X NVIDIA V100 GPUs (AWS p3dn.24xlarge instance) and ~ the training commands above. Tacotron2 training took 0.00698 hrs/epoch and WaveGlow training took 0.00488 hrs/epoch, derived from the date stamps outputted in the epochresults{modelname}.csv file. 
 
-Entire training set epoch loss was computed after the fact using saved checkpoints vs. saving during training which is now supported by the repo. As a result, a smooth/complete learning curve is lost. However, the data is still presented as it can serve as a useful training benchmark.  
-
+Entire training set epoch loss was computed after the fact using saved checkpoints vs. saving during training which is now supported by the repo. As a result, a smooth/complete learning curve is lost. However, the data is still presented below as it can serve as a useful training benchmark.
+  
 ### Example learning curve
 
 #### Tacotron2
@@ -258,7 +258,7 @@ TBD
 
 ### Training WaveGlow with predicted mels
 
-In the original [Tacotron2 paper](https://arxiv.org/abs/1712.05884), the best performance was achieved when WaveNet was trained on Tacotron2 predicted mels vs. ground truth mels. The official [WaveGlow paper](https://arxiv.org/pdf/1811.00002v1.pdf) specifies application using ground mels. Existing NVIDIA WaveGlow repositories don't offer tools to train WaveGlow using predicted mels. It's expected that the inference quality of Tacotron2/WaveGlow models may be improved by training WaveGlow on Tacotron2 predicted mels, although there are technical limitations in doing so. Firstly, given WaveGlow isn't autoregressive and only uses information at the current time step to predict respective audio, properly reconciling the time steps of predicted mels and ground truth audio is essential. Secondly, the stochastic audio segment sampling used in WaveGlow further complicates properly mapping predicted mels with ground truth audio by time step. Thirdly, predicted mels and actual audio can have a different length, so clipping or padding would be required for WaveGlow to be trained on the last segment of a passage. Finally, since predicted mel spectrograms are 'reduced' - by preset the mels are an average over a window of 1024 frames of audio and hop by 256 frames per time step - there are additional challenges to align reduced mels with frames of audio. 
+In the original [Tacotron2 paper](https://arxiv.org/abs/1712.05884), the best performance was achieved when WaveNet was trained on Tacotron2 predicted mels vs. ground truth mels. The official [WaveGlow paper](https://arxiv.org/pdf/1811.00002v1.pdf) specifies application using ground truth mels. Existing NVIDIA WaveGlow repositories don't offer tools to train WaveGlow using predicted mels. It's expected that the inference quality of Tacotron2/WaveGlow models may be improved by training WaveGlow on Tacotron2 predicted mels, although there are technical limitations in doing so. Firstly, given WaveGlow isn't autoregressive and only uses information at the current time step to predict respective audio, properly reconciling the time steps of predicted mels and ground truth audio is essential. Secondly, the stochastic audio segment sampling used in WaveGlow further complicates properly mapping predicted mels with ground truth audio by time step. Thirdly, predicted mels and actual audio can have a different length, so clipping or padding would be required for WaveGlow to be trained on the last segment of a passage. Finally, since predicted mel spectrograms are 'reduced' - by preset the mels are an average over a window of 1024 frames of audio and hop by 256 frames per time step - there are additional challenges to align reduced mels with frames of audio. 
 
 As an initial attempt inspired by the improvements noted in the Tacotron2 paper, functionality to save and use predicted mels in training was developed but remains in an experimental stage. The bottleneck for inference quality of the AC voice checkpoints provided was determined to be WaveGlow's ability to predict actual audio using ground truth mels (see [Inference using ground truth mels](#inference-using-ground-truth-mels)), and hence additional work using predicted mels was paused. 
 
@@ -271,9 +271,9 @@ The approach developed to save predicted mel/audition segments for a given passa
 5. For the last audio segment, add zero padding to complete the full segment if needed.   
 6. Continue to the next passage.
 
-The execution can be found in the files below
-[get_predicted_mels.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/save_predicted_mels.py)
+The execution can be found in the below files:
 
+[get_predicted_mels.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/save_predicted_mels.py)
 [waveglow/loss_function.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/waveglow/data_function.py)
 
 The following commands can be used to save predicted mel/audio segments and train WaveGlow using them. 
