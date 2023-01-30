@@ -217,10 +217,8 @@ A requirement of Tacotron2 & WaveGlow training is for all passages in a batch to
 
 Tacotron2 uses mean squared error (MSE) loss out of box whereby the squared error is computed between actual and predicted mel spectrograms at each frequency bin and time step, then averaged. The values for some of these time steps (for passages that aren't the longest) will all be zero because of the zero padding. As the batch size increases, the longest passage length in the batch is expected to increase, and as a result more time steps become zero padded. Predictions of 0 across all time steps will perform well for the shortest passages that contain almost all zero-padded time steps, so loss decreases. This makes loss incomparable across different batch sizes and different passages in a batch. As an illustration of the incomparable loss across different passages, find the difference in MSE loss for the first 10 passages in the LJ voice dataset ordered by passage text length descending, and using a batch size of 10 with NVIDIA's pretrained models. 
 
-**![](./img/lossfunctioncomparison.png "Passage Loss Comparison by Loss Function")**
-
 <p align="center">
-  <img src"./img/lossfunctioncomparison.png" />
+  <img src="./img/lossfunctioncomparison.png" />
 </p>
 
 Most critically, including padding in the loss function encourages the Tacotron2 model to focus on learning when the passage has stopped vs. the mel features of the passage. This makes training Tacotron2 highly inefficient and prevents convergence when using large batch sizes. At small batch sizes, the signal at each update step is diluted by the padding.
