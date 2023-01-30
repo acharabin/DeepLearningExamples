@@ -274,6 +274,7 @@ The approach developed to save predicted mel/audition segments for a given passa
 The execution can be found in the below files:
 
 [get_predicted_mels.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/save_predicted_mels.py)
+
 [waveglow/loss_function.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/waveglow/data_function.py)
 
 The following commands can be used to save predicted mel/audio segments and train WaveGlow using them. 
