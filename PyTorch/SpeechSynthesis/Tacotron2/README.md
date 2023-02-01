@@ -80,7 +80,7 @@ Complete the following steps to get ready for model training with a voice datase
 
 1. Clone the repository.
    ```bash
-   git clone https://github.com/NVIDIA/DeepLearningExamples.git
+   git clone https://github.com/acharabin/DeepLearningExamples.git
    cd DeepLearningExamples/PyTorch/SpeechSynthesis/Tacotron2
    ```
 
