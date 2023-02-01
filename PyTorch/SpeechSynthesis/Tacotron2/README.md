@@ -104,6 +104,12 @@ After you build the container image, you can start an interactive CLI session wi
    
    It can be detached by click CTRL + p then CTRL + q.
 
+   After detaching, it can be stopped with:
+   
+   ```bash
+   docker stop test_tacotron2
+   ```
+
 4. (Optional) Set s3 bucket credentials.
    
    If your compute instance is associated with an AWS account, it's recommended to connect your s3 bucket to reduce file transfer admin. 
@@ -145,7 +151,7 @@ After you build the container image, you can start an interactive CLI session wi
 
 ### Voice Recording
 
-AC-Voice-Cloning-Data is available in the repo for use in model training. To record and use a new voice, make a copy of the AC-Voice-Cloning-Data folder and replace existing recordings in AC-Voice-Cloning-Data/wavs/train with new .wav voice recordings for each passage in AC-Voice-Cloning-Data/filelists/acs_audio_text_train_filelists.txt. Repeat for the validation filelist. The end result is ~ 2.4 hours of recorded audio which takes ~ 8-10 hours of recording time. Mels can be generated in advance by running the scripts/prepare_mels_ac.sh file after ensuring the script references the new audio folder. Additional tools and tips for recording, file administration, and audio editing will be added at a later time. 
+AC-Voice-Cloning-Data is available in the repo for use in model training. The first 10% of passages (1250) in the LJ Speech Dataset were used. To record and use a new voice, make a copy of the AC-Voice-Cloning-Data folder and replace existing recordings in AC-Voice-Cloning-Data/wavs/train with new .wav voice recordings for each passage in AC-Voice-Cloning-Data/filelists/acs_audio_text_train_filelists.txt. Repeat for the validation filelist. The end result is ~ 2.4 hours of recorded audio which takes ~ 8-10 hours of recording time. Mels can be generated in advance by running the scripts/prepare_mels_ac.sh file after ensuring the script references the new audio folder. Additional tools and tips for recording, file administration, and audio editing will be added at a later time. 
 
 ### Training hyperparameters
 
@@ -167,6 +173,12 @@ Note that these recommendations assume warm starting using an existing model (i.
 
 ### Training commands
 
+The train.py script is used to train Tacotron2 and WaveGlow models. It reference model-specific modules in the tacotron2/ and waveglow/ directories. To see all available command line arguments in the train.py script, run the following:
+
+```bash
+python train.py -h
+```
+
 #### 8 X NVIDIA V100 GPUs / AWS p3dn.24xlarge instance
 
 NVIDIA/LJ Voice models are used for warm start.
@@ -184,6 +196,8 @@ python -m multiproc train.py -m WaveGlow -o output/ -lr 1e-4 --epochs 751 --epoc
 To continue training from the last saved checkpoint, remove the --warm-start and --checkpoint-path arguments and add the --resume-from-last argument. 
 
 --uploadepoch-loss-to-s3 argument should be removed if s3 credentials weren't added in the .env file. 
+
+--remove-module-from-state-dict argument should be added when training on a single GPU if the model used for warm start was trained on multiple GPUs. 
 
 ### Inference command
 

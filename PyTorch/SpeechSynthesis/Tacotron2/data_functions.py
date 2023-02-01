@@ -28,6 +28,7 @@
 import torch
 from tacotron2.data_function import TextMelCollate
 from tacotron2.data_function import TextMelLoader
+from tacotron2.data_function import dataset_with_indices
 from waveglow.data_function import MelAudioLoader
 from tacotron2.data_function import batch_to_gpu as batch_to_gpu_tacotron2
 from waveglow.data_function import batch_to_gpu as batch_to_gpu_waveglow
@@ -44,12 +45,11 @@ def get_collate_function(model_name, n_frames_per_step=1):
 
     return collate_fn
 
-
-def get_data_loader(model_name, dataset_path, audiopaths_and_text, args):
+def get_data_loader(model_name, dataset_path, audiopaths_and_text, trainset, args):
     if model_name == 'Tacotron2':
-        data_loader = TextMelLoader(dataset_path, audiopaths_and_text, args)
+        data_loader = TextMelLoader(dataset_path, audiopaths_and_text, trainset, args)
     elif model_name == 'WaveGlow':
-        data_loader = MelAudioLoader(dataset_path, audiopaths_and_text, args)
+        data_loader = MelAudioLoader(dataset_path, audiopaths_and_text, trainset, args)
     else:
         raise NotImplementedError(
             "unknown data loader requested: {}".format(model_name))
