@@ -8,3 +8,4 @@ nvlog.json
 AC-Voice-Cloning-Data/mels/predicted
 AC-Voice-Cloning-Data/wavs/predicted
 scripts/docker/interactive_*
+test

@@ -405,7 +405,7 @@ def validate(model, criterion, valset, epoch, batch_iter, batch_size,
                 val_items_per_sec += items_per_sec
                 num_iters += 1
                 
-                if valset.trainset: print('loss at batch {}: {}'.format(i,val_loss))
+                #if valset.trainset: print('loss at batch {}: {}'.format(i,val_loss))
 
         val_loss = val_loss/num_iters
         val_items_per_sec = val_items_per_sec/num_iters
