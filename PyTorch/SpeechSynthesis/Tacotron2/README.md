@@ -266,11 +266,11 @@ In this case, the --gtm-index argument indicates to use the first passage in the
 ### Data Acquisition
 #### Script management
 
-Once recorded .wav files are obtained and organized chronologically, functions in the [notebooks/scriptmanagement.pynb](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/notebooks/scriptmanagement.py) notebook can be used to create your dedicated voice folder, and name and move files to the right directory. After the first run of recordings, retakes may be nessary for some passages. Functions are available to automate retake administration, specifically, the creation of a retakes filelist and swapping of official audio files with new takes.  
+Once recorded .wav files are obtained and organized chronologically, functions in the [notebooks/scriptmanagement.pynb](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/notebooks/scriptmanagement.ipynb) notebook can be used to create your dedicated voice folder, and name and move files to the right directory. After the first run of recordings, retakes may be nessary for some passages. Functions are available to automate retake administration, specifically, the creation of a retakes filelist and swapping of official audio files with new takes.  
 
 #### Audio editing
 
-Once the dedicated voice folder has been prepared containing the unedited voice files and other contents as indicated in the [script management](#script-management) section, silence before and after spoken passages needs to be removed, and audio volume needs to be normalized to a fixed average. Automated functions to perform these adjustments can be found here: [tacotron2/audioediting.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/tacotron2/notebooks/audioediting.pynb)
+Once the dedicated voice folder has been prepared containing the unedited voice files and other contents as indicated in the [script management](#script-management) section, silence before and after spoken passages needs to be removed, and audio volume needs to be normalized to a fixed average. Automated functions to perform these adjustments can be found here: [tacotron2/audioediting.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/notebooks/audioediting.ipynb)
 
 After completion of audio editing, the voice folder can be zipped and transferred to the Tacotron2/ directory in the compute instance to be used for training. Prior to training, mel spectrograms can be computed for each audio file to save time when training; refer to the [Voice Recording](#voice-recording) section for further details.  
 
