@@ -25,7 +25,7 @@ For those new to TTS and Tacotron2/WaveGlow, it's recommended to read the initia
 - [Warm start](#warm-start)
 - [Inference using ground truth mels](#inferece-using-ground-truth-mels)
 - [Data Acquisition](#data-aquisition)
-   * [Script files](#epoch-training-loss)
+   * [Script management](#script-management)
    * [Audio editing](#audio-editing)
 - [Training WaveGlow with predicted mels](#predicted-mels)
 
@@ -149,9 +149,9 @@ After you build the container image, you can start an interactive CLI session wi
    s3.download_file(<s3 bucket>, f"""<prefix>/{file_name}""", f"""<path>/{file_name}""")secret
    ```
 
-### Voice Recording
+### Voice recording
 
-AC-Voice-Cloning-Data is available in the repo for use in model training. The first 10% of passages (1250) in the LJ Speech Dataset were used. To record and use a new voice, make a copy of the AC-Voice-Cloning-Data folder and replace existing recordings in AC-Voice-Cloning-Data/wavs/train with new .wav voice recordings for each passage in AC-Voice-Cloning-Data/filelists/acs_audio_text_train_filelists.txt. Repeat for the validation filelist. The end result is ~ 2.4 hours of recorded audio which takes ~ 8-10 hours of recording time. Mels can be generated in advance by running the scripts/prepare_mels_ac.sh file after ensuring the script references the new audio folder. Additional tools and tips for recording, file administration, and audio editing will be added at a later time. 
+AC-Voice-Cloning-Data is available in the repo for use in model training. The first 10% of passages (1250) in the LJ Speech Dataset were used. To record and use a new voice using the same script, record each passage in the AC-Voice-Cloning-Data/filelists/acs_audio_text_<train or validation>_filelists.txt scripts and organize outputs chronologically in a folder. Then, complete the steps noted in the [Data Acquisition section](#data-aquisition). The end result is ~ 2.4 hours of recorded audio which takes ~ 10 hours of recording time. Mels can be generated in advance by running the scripts/prepare_mels_ac.sh file after ensuring the script references the new audio folder. 
 
 ### Training hyperparameters
 
@@ -163,7 +163,7 @@ When using distributed training, one batch is allocated to each GPU and each upd
 
 The official Tacotron2 and WaveGlow papers referenced using a batch size of 64 and 24, respectively. Using distributed training with 8 GPUs, the equivalent batch size arguments are 8 and 3, respectively.
 
-#### Learning Rate Annealing
+#### Learning rate annealing
 
 For Tacotron2, a reduction in the learning rate by 50% every 500 epochs is imposed.
 
@@ -264,11 +264,15 @@ python inference.py --tacotron2 <Tacotron2_checkpoint> --waveglow <WaveGlow_chec
 In this case, the --gtm-index argument indicates to use the first passage in the filelist provided (-i) to get inferences. Ground truth audio is then obtained from the path in the filelist. 
 
 ### Data Acquisition
-#### Script files
-TBD
+#### Script management
+
+Once recorded .wav files are obtained and organized chronologically, functions in the [notebooks/scriptmanagement.pynb](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/notebooks/scriptmanagement.py) notebook can be used to create your dedicated voice folder, and name and move files to the right directory. After the first run of recordings, retakes may be nessary for some passages. Functions are available to automate retake administration, specifically, the creation of a retakes filelist and swapping of official audio files with new takes.  
 
 #### Audio editing
-TBD
+
+Once the dedicated voice folder has been prepared containing the unedited voice files and other contents as indicated in the [script management section](#script-management), silence before and after spoken passages needs to be removed, and audio volume needs to be normalized to a fixed average. Automated functions to perform these adjustments can be found here: [tacotron2/audioediting.py](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/tacotron2/notebooks/audioediting.pynb)
+
+After completion of audio editing, the voice folder can be zipped and transferred to the Tacotron2/ directory in the compute instance to be used for training. Prior to training, mel spectrograms can be computed for each audio file to save time when training; refer to the [Voice Recording section](#voice-recording) for further details.  
 
 ### Training WaveGlow with predicted mels
 
