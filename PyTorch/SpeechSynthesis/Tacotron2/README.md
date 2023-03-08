@@ -1,6 +1,6 @@
-# Tacotron 2 And WaveGlow For PyTorch
+# Tacotron 2 And WaveGlow/Univnet For PyTorch
 
-This repository provides additions to NVIDIA/DeepLearningExamples scripts to further optimize training and inferences with Tacotron 2 and WaveGlow v1.6 models. More fundamentally, this repository is designed to provide a recipe for not just how to train a text-to-speech (TTS) model using an existing open source dataset (i.e. LJ voice), but to be able to easily scale application to new voices through tools for script management, audio editing, transfer learning, and more. As such, the repo comes equipped with a new open source voice dataset (AC voice) and associated models/inferences as a proof of concept.
+This repository provides additions to NVIDIA/DeepLearningExamples scripts to further optimize training and inferences with Tacotron 2 and WaveGlow v1.6 or Univnet models. More fundamentally, this repository is designed to provide a recipe for not just how to train a text-to-speech (TTS) model using an existing open source dataset (i.e. LJ voice), but to be able to easily scale application to new voices through tools for script management, audio editing, transfer learning, and more. As such, the repo comes equipped with a new open source voice dataset (AC voice) and associated models/inferences as a proof of concept.
 
 ## Source Repo
 
@@ -17,6 +17,8 @@ DeepLearningExamples/.../Tacotron2 is the latest Pytorch implementation of Tacot
    * An inference module is provided that manages the hand-off between the Tacotron2 and WaveGlow models to get inferences with your trained model quickly.
 
 For those new to TTS and Tacotron2/WaveGlow, it's recommended to read the initial context provided in the source repo. 
+
+The forked repo also offers an ability to obtain inferences using a pretrained Univnet model alongside Tacotron2. At a later time, the ability to train new Univnet models will be added to the forked repo.
 
 ## Additions to Source Repo
 
@@ -204,8 +206,13 @@ To continue training from the last saved checkpoint, remove the --warm-start and
 The following command can be used to get an inference with a Tacotron2 and WaveGlow checkpoint. 
 
 ```bash
-python inference.py --tacotron2 <Tacotron2_checkpoint> --waveglow <WaveGlow_checkpoint> --wn-channels 256 -o output/ --include-warmup -i phrases/phrase.txt --upload-to-s3 --suffix _letters --fp16
+python inference.py --tacotron2 <Tacotron2_checkpoint> -v 'WaveGlow' --waveglow <WaveGlow_checkpoint> --wn-channels 256 -o output/inference/ -i phrases/phrase.txt --upload-to-s3 --suffix _letters --fp16
 ```
+
+The following command can be used to get an inference with a Tacotron2 and Univnet checkpoint.
+
+```bash
+python inference.py --tacotron2 <Tacotron2_checkpoint> -v 'univnet' --univnet <univnet_checkpoint> -uc <univnet config file> -o output/inference/ -i phrases/phrase.txt --upload-to-s3 --suffix _letters --fp16
 
 --upload-to-s3 should be removed if s3 credentials weren't added in the .env file.
 

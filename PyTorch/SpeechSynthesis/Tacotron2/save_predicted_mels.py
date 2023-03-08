@@ -338,6 +338,12 @@ def main():
 
     else: 
         
+        texts = []
+        with open(args.input, 'r') as f:
+            lines=f.readlines()
+            for text in lines: 
+                texts.append(f.readlines())
+        
         measurements = {}
 
         sequences_padded, input_lengths = prepare_input_sequence(texts, args.cpu)
@@ -352,6 +358,19 @@ def main():
     elif args.validation:
         subfolder='/validation'
     else: subfolder=''
+
+    audio_directory=args.output_audio_path+subfolder
+    mel_directory=args.output_mel_path+subfolder
+
+    if args.empty_output_path and not args.test:
+        if os.path.exists(audio_directory):
+            for filename in os.listdir(audio_directory):
+                os.remove(os.path.join(audio_directory,filename))
+            print('Emptied directory {}'.format(audio_directory))
+        if os.path.exists(mel_directory):
+            for filename in os.listdir(mel_directory):
+                os.remove(os.path.join(mel_directory,filename))
+            print('Emptied directory {}'.format(mel_directory))
 
     if args.split_segments:
         
@@ -368,16 +387,6 @@ def main():
 
         audio_directory=args.output_audio_path+subfolder
         mel_directory=args.output_mel_path+subfolder
-
-        if args.empty_output_path and not args.test:
-            if os.path.exists(audio_directory):
-                for filename in os.listdir(audio_directory):
-                    os.remove(os.path.join(audio_directory,filename))
-                print('Emptied directory {}'.format(audio_directory))
-            if os.path.exists(mel_directory):
-                for filename in os.listdir(mel_directory):
-                    os.remove(os.path.join(mel_directory,filename))
-                print('Emptied directory {}'.format(mel_directory))
 
         counter=0
         lines=[]
@@ -444,15 +453,15 @@ def main():
         for i, mel in enumerate(mels,start=1):
             filename=args.prefix_mel+str(i)+'.pt'
 
-            mel_path=os.path.join(args.output_mel_path+subfolder,filename)
+            mel_path=os.path.join(mel_directory,filename)
             if args.skip_if_exists:
-                if not os.path.exists(fullpath) and not args.test:
-                    torch.save(mel,fullpath)
-                    print("Saved predicted mel {} to {}".format(str(i), fullpath))
+                if not os.path.exists(mel_path) and not args.test:
+                    torch.save(mel,mel_path)
+                    print("Saved predicted mel {} to {}".format(str(i), mel_path))
             else:
                 if not args.test:
-                    torch.save(mel,fullpath)
-                    print("Saved predicted mel {} to {}".format(str(i), fullpath))
+                    torch.save(mel,mel_path)
+                    print("Saved predicted mel {} to {}".format(str(i), mel_path))
 
     #with torch.no_grad(), MeasureTime(measurements, "waveglow_time", args.cpu):
         #audios = waveglow(mel, sigma=args.sigma_infer)

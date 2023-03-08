@@ -43,6 +43,13 @@ from tacotron2 import data_function
 import boto3
 import configparser
 
+import glob
+import tqdm
+import argparse
+from omegaconf import OmegaConf
+from univnet.model.generator import Generator
+import re
+
 def parse_args(parser):
     """
     Parse commandline arguments.
@@ -56,8 +63,12 @@ def parse_args(parser):
     parser.add_argument('--suffix', type=str, default="", help="output filename suffix")
     parser.add_argument('--tacotron2', type=str,
                         help='full path to the Tacotron2 model checkpoint file')
+    parser.add_argument('-v', '--vocoder', type=str, choices=['univnet','WaveGlow'], default='WaveGlow',
+                        help='Choose whether to use univnet or WaveGlow to synthesize audio from mels')
     parser.add_argument('--waveglow', type=str,
                         help='full path to the WaveGlow model checkpoint file')
+    parser.add_argument('--univnet', type=str,
+                        help='full path to the univnet model checkpoint file')
     
     # Inference Configuration Parameters
     parser.add_argument('-s', '--sigma-infer', default=0.9, type=float)
@@ -100,6 +111,10 @@ def parse_args(parser):
     parser.add_argument('--log-file', type=str, default='nvlog.json',
                         help='Filename for logging')
 
+    # Univnet Parameters
+    parser.add_argument('-uc', '--univnet-config', type=str, default=None,
+                        help="yaml file for config. will use hp_str from checkpoint if not given.")
+
     return parser
 
 
@@ -132,8 +147,34 @@ def unwrap_distributed(state_dict):
     return new_state_dict
 
 
-def load_and_setup_model(model_name, parser, checkpoint, fp16_run, cpu_run, forward_is_infer=False):
+def load_and_setup_model(model_name, parser, checkpoint, fp16_run, cpu_run, univnet_config, forward_is_infer=False):
     
+    if model_name == 'univnet':
+        if cpu_run:
+            checkpoint = torch.load(checkpoint, map_location=torch.device('cpu'))
+        else:
+            checkpoint = torch.load(checkpoint)
+        
+        if univnet_config is not None:
+            hp = OmegaConf.load(univnet_config)
+        else:
+            hp = OmegaConf.create(checkpoint['hp_str'])
+
+        model = Generator(hp).cuda()
+        saved_state_dict = checkpoint['model_g']
+        new_state_dict = {}
+
+        for k, v in saved_state_dict.items():
+            try:
+                new_state_dict[k] = saved_state_dict['module.' + k]
+            except:
+                new_state_dict[k] = v
+
+        model.load_state_dict(new_state_dict)
+        model.eval(inference=True)
+
+        return model
+
     model_parser = models.model_parser(model_name, parser, add_help=False)
     model_args, _ = model_parser.parse_known_args()
     
@@ -235,13 +276,16 @@ def main():
         DLLogger.log(step="PARAMETER", data={k:v})
     DLLogger.log(step="PARAMETER", data={'model_name':'Tacotron2_PyT'})
     
-    #tacotron2 = load_and_setup_model('Tacotron2', parser, args.tacotron2,
-                                     #args.fp16, args.cpu, forward_is_infer=True)
-    waveglow = load_and_setup_model('WaveGlow', parser, args.waveglow,
-                                    args.fp16, args.cpu, forward_is_infer=True)
-    denoiser = Denoiser(waveglow)
-    if not args.cpu:
-        denoiser.cuda()
+    if args.vocoder == 'univnet':
+        univnet = load_and_setup_model('univnet', parser, args.univnet,
+                                    args.fp16, args.cpu, args.univnet_config, forward_is_infer=True)
+
+    else: 
+        waveglow = load_and_setup_model('WaveGlow', parser, args.waveglow,
+                                    args.fp16, args.cpu, None, forward_is_infer=True)
+        denoiser = Denoiser(waveglow)
+        if not args.cpu:
+            denoiser.cuda()
     
     if args.use_ground_truth_mels:
         
@@ -271,7 +315,7 @@ def main():
     else: 
 
         tacotron2 = load_and_setup_model('Tacotron2', parser, args.tacotron2,
-                                     args.fp16, args.cpu, forward_is_infer=True)
+                                     args.fp16, args.cpu, None, forward_is_infer=True)
 
         jitted_tacotron2 = torch.jit.script(tacotron2)
 
@@ -292,7 +336,7 @@ def main():
             for i in range(3):
                 with torch.no_grad():
                     mel, mel_lengths, _ = jitted_tacotron2(sequence, input_lengths)
-                    _ = waveglow(mel)
+                    #_ = waveglow(mel)
 
         measurements = {}
 
@@ -301,25 +345,38 @@ def main():
         with torch.no_grad(), MeasureTime(measurements, "tacotron2_time", args.cpu):
             mel, mel_lengths, alignments = jitted_tacotron2(sequences_padded, input_lengths)
 
-    with torch.no_grad(), MeasureTime(measurements, "waveglow_time", args.cpu):
-        audios = waveglow(mel, sigma=args.sigma_infer)
-        audios = audios.float()
-    with torch.no_grad(), MeasureTime(measurements, "denoiser_time", args.cpu):
-        audios = denoiser(audios, strength=args.denoising_strength).squeeze(1)
-
-    print("Stopping after",mel.size(2),"decoder steps")
-    if args.use_ground_truth_mels == False:
         tacotron2_infer_perf = mel.size(0)*mel.size(2)/measurements['tacotron2_time']
         DLLogger.log(step=0, data={"tacotron2_items_per_sec": tacotron2_infer_perf})
         DLLogger.log(step=0, data={"tacotron2_latency": measurements['tacotron2_time']})
-    
-    waveglow_infer_perf = audios.size(0)*audios.size(1)/measurements['waveglow_time']
 
-    DLLogger.log(step=0, data={"waveglow_items_per_sec": waveglow_infer_perf})
-    DLLogger.log(step=0, data={"waveglow_latency": measurements['waveglow_time']})
-    DLLogger.log(step=0, data={"denoiser_latency": measurements['denoiser_time']})
-    if args.use_ground_truth_mels == False:
-        DLLogger.log(step=0, data={"latency": (measurements['tacotron2_time']+measurements['waveglow_time']+measurements['denoiser_time'])})
+    if args.vocoder == 'univnet':
+        with torch.no_grad():
+            #if len(mel.shape) == 2:
+                #mel = mel.unsqueeze(0)
+            #mel = mel.cuda()
+            
+            audios = univnet.inference(mel)
+            audios = audios.float()
+
+            if len(audios.shape) == 1:
+                audios=audios.unsqueeze(0)
+            print(audios)
+            #audios = audio.cpu().detach().numpy()
+    else:
+        with torch.no_grad(), MeasureTime(measurements, "waveglow_time", args.cpu):
+            audios = waveglow(mel, sigma=args.sigma_infer)
+            audios = audios.float()
+        with torch.no_grad(), MeasureTime(measurements, "denoiser_time", args.cpu):
+            audios = denoiser(audios, strength=args.denoising_strength).squeeze(1)
+        print("Stopping after",mel.size(2),"decoder steps")
+    
+        waveglow_infer_perf = audios.size(0)*audios.size(1)/measurements['waveglow_time']
+
+        DLLogger.log(step=0, data={"waveglow_items_per_sec": waveglow_infer_perf})
+        DLLogger.log(step=0, data={"waveglow_latency": measurements['waveglow_time']})
+        DLLogger.log(step=0, data={"denoiser_latency": measurements['denoiser_time']})
+        if args.use_ground_truth_mels == False:
+            DLLogger.log(step=0, data={"latency": (measurements['tacotron2_time']+measurements['waveglow_time']+measurements['denoiser_time'])})
 
     for i, audio in enumerate(audios):
         
