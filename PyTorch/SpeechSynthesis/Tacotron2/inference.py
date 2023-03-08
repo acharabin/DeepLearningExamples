@@ -59,7 +59,9 @@ def parse_args(parser):
 
     # File Path Parameters
     parser.add_argument('-i', '--input', type=str,
-                        help='full path to the input text (phareses separated by new line)')
+                        help='full path to the input text (phrases separated by new line)')
+    parser.add_argument('-it', '--input-text', type=str, default=None,
+                        help='Alternatively, input text directly as an argument which will override the input text file')
     parser.add_argument('-o', '--output',
                         help='output folder to save audio (file per phrase)')
     parser.add_argument('--suffix', type=str, default="", help="output filename suffix")
@@ -325,13 +327,15 @@ def main():
 
         jitted_tacotron2 = torch.jit.script(tacotron2)
 
-        texts = []
-        try:
-            f = open(args.input, 'r')
-            texts = f.readlines()
-        except:
-            print("Could not read file")
-            sys.exit(1)
+        if not args.input_text is None:
+            texts=[args.input_text]        
+        else:
+            try:
+                f = open(args.input, 'r')
+                texts = f.readlines()
+            except:
+                print("Could not read file")
+                sys.exit(1)
 
         if args.include_warmup:
             sequence = torch.randint(low=0, high=148, size=(1,50)).long()
