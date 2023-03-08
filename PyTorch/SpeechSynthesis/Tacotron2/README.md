@@ -112,7 +112,9 @@ After you build the container image, you can start an interactive CLI session wi
    docker stop test_tacotron2
    ```
 
-4. Create a soft symbolic link for the container's base directory
+4. (Optional) Create a soft symbolic link for the container's base or an alternative directory 
+
+   A symbolic link exists in the repo by default and was created using the following command. 
 	
    ```bash
    ln -s \workspace\tacotron2 __Tacotron2
