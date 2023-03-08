@@ -260,16 +260,18 @@ def main():
     Launches text to speech (inference).
     Inference is executed on a single GPU or CPU.
     """
-    parser = argparse.ArgumentParser(
-        description='PyTorch Tacotron 2 Inference')
-    parser = parse_args(parser)
-    args, _ = parser.parse_known_args()
+    if not 'args' in locals():
+        parser = argparse.ArgumentParser(
+            description='PyTorch Tacotron 2 Inference')
+        parser = parse_args(parser)
+        args, _ = parser.parse_known_args()
     
     if args.upload_to_s3:
         envparser = configparser.ConfigParser()
         envparser.read('.env')
 
     log_file = os.path.join(args.output, args.log_file)
+    if not os.path.exists(args.output): os.makedirs(args.output)
     DLLogger.init(backends=[JSONStreamBackend(Verbosity.DEFAULT, log_file),
                             StdOutBackend(Verbosity.VERBOSE)])
     for k,v in vars(args).items():
@@ -336,7 +338,6 @@ def main():
             for i in range(3):
                 with torch.no_grad():
                     mel, mel_lengths, _ = jitted_tacotron2(sequence, input_lengths)
-                    #_ = waveglow(mel)
 
         measurements = {}
 
@@ -350,18 +351,11 @@ def main():
         DLLogger.log(step=0, data={"tacotron2_latency": measurements['tacotron2_time']})
 
     if args.vocoder == 'univnet':
-        with torch.no_grad():
-            #if len(mel.shape) == 2:
-                #mel = mel.unsqueeze(0)
-            #mel = mel.cuda()
-            
+        with torch.no_grad(): 
             audios = univnet.inference(mel)
             audios = audios.float()
-
             if len(audios.shape) == 1:
                 audios=audios.unsqueeze(0)
-            print(audios)
-            #audios = audio.cpu().detach().numpy()
     else:
         with torch.no_grad(), MeasureTime(measurements, "waveglow_time", args.cpu):
             audios = waveglow(mel, sigma=args.sigma_infer)
