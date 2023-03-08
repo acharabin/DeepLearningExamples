@@ -114,9 +114,9 @@ def parse_args(parser):
     # Analytics Parameters
     parser.add_argument('--upload-to-s3', action='store_true',
                           help='Uploads inferences and alignments to s3')
-    parser.add_argument('--log-file', type=str, default='nvlog.json',
-                        help='Filename for logging')
-
+    parser.add_argument('--log-file', type=str, default=None,
+                        help='Filename for logging, if None no log file will be written')
+    
     # Univnet Parameters
     parser.add_argument('-uc', '--univnet-config', type=str, default=None,
                         help="yaml file for config. will use hp_str from checkpoint if not given.")
@@ -276,13 +276,15 @@ def main():
         envparser = configparser.ConfigParser()
         envparser.read('.env')
 
-    log_file = os.path.join(args.output, args.log_file)
-    if not os.path.exists(args.output): os.makedirs(args.output)
-    DLLogger.init(backends=[JSONStreamBackend(Verbosity.DEFAULT, log_file),
+    if not args.log_file is None:
+        log_file = os.path.join(args.output, args.log_file)
+        if not os.path.exists(args.output): os.makedirs(args.output)
+        DLLogger.init(backends=[JSONStreamBackend(Verbosity.DEFAULT, log_file),
                             StdOutBackend(Verbosity.VERBOSE)])
-    for k,v in vars(args).items():
-        DLLogger.log(step="PARAMETER", data={k:v})
-    DLLogger.log(step="PARAMETER", data={'model_name':'Tacotron2_PyT'})
+    
+        for k,v in vars(args).items():
+            DLLogger.log(step="PARAMETER", data={k:v})
+        DLLogger.log(step="PARAMETER", data={'model_name':'Tacotron2_PyT'})
     
     if args.vocoder == 'univnet':
         univnet = load_and_setup_model('univnet', parser, args.univnet,
@@ -355,8 +357,10 @@ def main():
             mel, mel_lengths, alignments = jitted_tacotron2(sequences_padded, input_lengths)
 
         tacotron2_infer_perf = mel.size(0)*mel.size(2)/measurements['tacotron2_time']
-        DLLogger.log(step=0, data={"tacotron2_items_per_sec": tacotron2_infer_perf})
-        DLLogger.log(step=0, data={"tacotron2_latency": measurements['tacotron2_time']})
+        
+        if not args.log_file is None:
+            DLLogger.log(step=0, data={"tacotron2_items_per_sec": tacotron2_infer_perf})
+            DLLogger.log(step=0, data={"tacotron2_latency": measurements['tacotron2_time']})
 
     if args.vocoder == 'univnet':
         with torch.no_grad(): 
@@ -374,11 +378,12 @@ def main():
     
         waveglow_infer_perf = audios.size(0)*audios.size(1)/measurements['waveglow_time']
 
-        DLLogger.log(step=0, data={"waveglow_items_per_sec": waveglow_infer_perf})
-        DLLogger.log(step=0, data={"waveglow_latency": measurements['waveglow_time']})
-        DLLogger.log(step=0, data={"denoiser_latency": measurements['denoiser_time']})
-        if args.use_ground_truth_mels == False:
-            DLLogger.log(step=0, data={"latency": (measurements['tacotron2_time']+measurements['waveglow_time']+measurements['denoiser_time'])})
+        if not args.log_file is None:
+            DLLogger.log(step=0, data={"waveglow_items_per_sec": waveglow_infer_perf})
+            DLLogger.log(step=0, data={"waveglow_latency": measurements['waveglow_time']})
+            DLLogger.log(step=0, data={"denoiser_latency": measurements['denoiser_time']})
+            if args.use_ground_truth_mels == False:
+                DLLogger.log(step=0, data={"latency": (measurements['tacotron2_time']+measurements['waveglow_time']+measurements['denoiser_time'])})
     
     if args.return_audio_vector:
         return audios
@@ -414,7 +419,7 @@ def main():
             except Exception as e:
                 print(e)
 
-    DLLogger.flush()
+    if not args.log_file is None: DLLogger.flush()
 
 if __name__ == '__main__':
     main()
