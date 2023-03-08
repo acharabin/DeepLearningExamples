@@ -25,8 +25,10 @@
 #
 # *****************************************************************************
 
-from tacotron2.text import text_to_sequence
-import models
+# Import packages
+
+from __Tacotron2.tacotron2.text import text_to_sequence
+from __Tacotron2 import models
 import torch
 import argparse
 import os
@@ -39,7 +41,7 @@ import time
 import dllogger as DLLogger
 from dllogger import StdOutBackend, JSONStreamBackend, Verbosity
 from waveglow.denoiser import Denoiser
-from tacotron2 import data_function
+from __Tacotron2.tacotron2 import data_function
 import boto3
 import configparser
 
@@ -47,7 +49,7 @@ import glob
 import tqdm
 import argparse
 from omegaconf import OmegaConf
-from univnet.model.generator import Generator
+from __Tacotron2.univnet.model.generator import Generator
 import re
 
 def parse_args(parser):
@@ -56,9 +58,9 @@ def parse_args(parser):
     """
 
     # File Path Parameters
-    parser.add_argument('-i', '--input', type=str, required=True,
+    parser.add_argument('-i', '--input', type=str,
                         help='full path to the input text (phareses separated by new line)')
-    parser.add_argument('-o', '--output', required=True,
+    parser.add_argument('-o', '--output',
                         help='output folder to save audio (file per phrase)')
     parser.add_argument('--suffix', type=str, default="", help="output filename suffix")
     parser.add_argument('--tacotron2', type=str,
@@ -90,6 +92,8 @@ def parse_args(parser):
                         help='Run inference on CPU')
     run_mode.add_argument('--include-warmup', action='store_true',
                         help='Include warmup')
+    run_mode.add_argument('--return-audio-vector', action='store_true',
+                        help='When selected, returns the vector of synthesized audio instead of writing a wav file')
 
     # Dataset Parameters
     parser.add_argument('--max-wav-value', default=32768.0, type=float,
@@ -371,6 +375,9 @@ def main():
         DLLogger.log(step=0, data={"denoiser_latency": measurements['denoiser_time']})
         if args.use_ground_truth_mels == False:
             DLLogger.log(step=0, data={"latency": (measurements['tacotron2_time']+measurements['waveglow_time']+measurements['denoiser_time'])})
+    
+    if args.return_audio_vector:
+        return audios
 
     for i, audio in enumerate(audios):
         

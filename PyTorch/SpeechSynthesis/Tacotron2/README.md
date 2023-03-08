@@ -112,7 +112,18 @@ After you build the container image, you can start an interactive CLI session wi
    docker stop test_tacotron2
    ```
 
-4. (Optional) Set s3 bucket credentials.
+4. Create a soft symbolic link for the container's base directory
+	
+   ```bash
+   ln -s \workspace\tacotron2 __Tacotron2
+   ```
+   
+   This allows for the use of select modules in the repo for other applications where Tacotron2 isn't the working directory. I.e. a new symbolic link can be created that references the new path from the working to Tacotron2 directory if needed. 
+
+   Note, however, that because certain modules are loaded using this symbolic link, some modules can only be executed within the NGC container.  
+
+
+5. (Optional) Set s3 bucket credentials.
    
    If your compute instance is associated with an AWS account, it's recommended to connect your s3 bucket to reduce file transfer admin. 
 
@@ -129,7 +140,7 @@ After you build the container image, you can start an interactive CLI session wi
    
    press ESC then type :wq then Enter to save the file. 
 
-5. (Optional) Download existing models.
+6. (Optional) Download existing models.
 
    Existing models can be downloaded [here](https://drive.google.com/drive/folders/1oj0NU7eQ_KpI3WPvJOFNYpz7gOi9ui6l) to use for warm start or inference testing.
 
