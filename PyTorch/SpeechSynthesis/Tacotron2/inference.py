@@ -166,7 +166,11 @@ def load_and_setup_model(model_name, parser, checkpoint, fp16_run, cpu_run, univ
         else:
             hp = OmegaConf.create(checkpoint['hp_str'])
 
-        model = Generator(hp).cuda()
+        if cpu_run:
+            model = Generator(hp)
+        else:
+            model = Generator(hp).cuda()
+
         saved_state_dict = checkpoint['model_g']
         new_state_dict = {}
 
