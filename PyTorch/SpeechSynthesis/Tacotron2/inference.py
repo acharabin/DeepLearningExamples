@@ -60,14 +60,14 @@ def parse_args(parser):
     # File Path Parameters
     parser.add_argument('-i', '--input', type=str,
                         help='full path to the input text (phrases separated by new line)')
-    parser.add_argument('-it', '--input-text', type=str, default=None,
+    parser.add_argument('-it', '--input-text', type=str,
                         help='Alternatively, input text directly as an argument which will override the input text file')
     parser.add_argument('-o', '--output',
                         help='output folder to save audio (file per phrase)')
-    parser.add_argument('--suffix', type=str, default="", help="output filename suffix")
+    parser.add_argument('--suffix', type=str, help="output filename suffix")
     parser.add_argument('--tacotron2', type=str,
                         help='full path to the Tacotron2 model checkpoint file')
-    parser.add_argument('-v', '--vocoder', type=str, choices=['univnet','WaveGlow'], default='WaveGlow',
+    parser.add_argument('-v', '--vocoder', type=str, choices=['univnet','WaveGlow'], default='univnet',
                         help='Choose whether to use univnet or WaveGlow to synthesize audio from mels')
     parser.add_argument('--waveglow', type=str,
                         help='full path to the WaveGlow model checkpoint file')
@@ -118,7 +118,7 @@ def parse_args(parser):
                         help='Filename for logging, if None no log file will be written')
     
     # Univnet Parameters
-    parser.add_argument('-uc', '--univnet-config', type=str, default=None,
+    parser.add_argument('-uc', '--univnet-config', type=str,
                         help="yaml file for config. will use hp_str from checkpoint if not given.")
 
     return parser
