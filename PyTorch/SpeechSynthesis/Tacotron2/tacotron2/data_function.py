@@ -28,7 +28,7 @@
 import torch
 import torch.utils.data
 
-from __Tacotron2 import tacotron2_common.layers as layers
+import __Tacotron2.tacotron2_common.layers as layers
 from __Tacotron2.tacotron2_common.utils import load_wav_to_torch, load_filepaths_and_text, to_gpu
 from __Tacotron2.tacotron2.text import text_to_sequence
 
