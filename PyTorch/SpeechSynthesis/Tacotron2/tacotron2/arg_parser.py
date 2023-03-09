@@ -27,8 +27,7 @@
 
 import argparse
 
-from tacotron2.text import symbols
-
+from __Tacotron2.tacotron2.text import symbols
 
 def tacotron2_parser(parent, add_help=False):
     """

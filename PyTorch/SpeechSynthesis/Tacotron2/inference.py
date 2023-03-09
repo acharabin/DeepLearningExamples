@@ -299,10 +299,6 @@ def main():
     
     if args.use_ground_truth_mels:
         
-        model_name = 'Tacotron2'
-        parser = models.model_parser(model_name, parser)
-        args, _ = parser.parse_known_args()
-
         args.text_cleaners = ['english_cleaners']
         args.load_mel_from_disk=False
 
