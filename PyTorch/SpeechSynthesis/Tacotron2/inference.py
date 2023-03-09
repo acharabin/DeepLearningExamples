@@ -380,7 +380,7 @@ def main(args, parser):
                 DLLogger.log(step=0, data={"latency": (measurements['tacotron2_time']+measurements['waveglow_time']+measurements['denoiser_time'])})
     
     if args.output_audio_vector:
-        return audios.squeeze(0)
+        return audios.squeeze(0).numpy()
 
     for i, audio in enumerate(audios):
         
