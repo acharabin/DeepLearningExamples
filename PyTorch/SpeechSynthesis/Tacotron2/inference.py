@@ -260,17 +260,11 @@ class MeasureTime():
             torch.cuda.synchronize()
         self.measurements[self.key] = time.perf_counter() - self.t0
 
-
-def main():
+def main(args):
     """
     Launches text to speech (inference).
     Inference is executed on a single GPU or CPU.
     """
-    if not 'args' in locals():
-        parser = argparse.ArgumentParser(
-            description='PyTorch Tacotron 2 Inference')
-        parser = parse_args(parser)
-        args, _ = parser.parse_known_args()
     
     if args.upload_to_s3:
         envparser = configparser.ConfigParser()
@@ -418,4 +412,14 @@ def main():
     if not args.log_file is None: DLLogger.flush()
 
 if __name__ == '__main__':
-    main()
+    
+    # Parse args to pass into main()
+
+    parser = argparse.ArgumentParser(
+            description='PyTorch Tacotron 2 Inference')
+    parser = parse_args(parser)
+    args, _ = parser.parse_known_args()
+    
+    # Run main module
+
+    main(args)
