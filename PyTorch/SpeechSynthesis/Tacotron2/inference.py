@@ -64,6 +64,8 @@ def parse_args(parser):
                         help='Alternatively, input text directly as an argument which will override the input text file')
     parser.add_argument('-o', '--output',
                         help='output folder to save audio (file per phrase)')
+    parser.add_argument('-ovec','--output-audio-vector', action='store_true',
+                        help='When selected, returns the vector of synthesized audio instead of writing a wav file')
     parser.add_argument('--suffix', type=str, help="output filename suffix")
     parser.add_argument('--tacotron2', type=str,
                         help='full path to the Tacotron2 model checkpoint file')
@@ -94,9 +96,7 @@ def parse_args(parser):
                         help='Run inference on CPU')
     run_mode.add_argument('--include-warmup', action='store_true',
                         help='Include warmup')
-    run_mode.add_argument('--return-audio-vector', action='store_true',
-                        help='When selected, returns the vector of synthesized audio instead of writing a wav file')
-
+    
     # Dataset Parameters
     parser.add_argument('--max-wav-value', default=32768.0, type=float,
                        help='Maximum audiowave value')
@@ -260,7 +260,7 @@ class MeasureTime():
             torch.cuda.synchronize()
         self.measurements[self.key] = time.perf_counter() - self.t0
 
-def main(args):
+def main(args, parser):
     """
     Launches text to speech (inference).
     Inference is executed on a single GPU or CPU.
@@ -375,8 +375,8 @@ def main(args):
             if args.use_ground_truth_mels == False:
                 DLLogger.log(step=0, data={"latency": (measurements['tacotron2_time']+measurements['waveglow_time']+measurements['denoiser_time'])})
     
-    if args.return_audio_vector:
-        return audios
+    if args.output_audio_vector:
+        return audios.squeeze(0)
 
     for i, audio in enumerate(audios):
         
@@ -422,4 +422,4 @@ if __name__ == '__main__':
     
     # Run main module
 
-    main(args)
+    main(args, parser)
