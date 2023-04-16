@@ -33,7 +33,9 @@ The forked repo also offers an ability to obtain inferences using a pretrained U
 
 ## Table of Contents
 
-- [Example model inference](#example-model-inference)
+- [AC Voice Examples](#ac-voice-examples)
+   * [Model Inference](#model-inference)
+   * [Ground Truth Recording](#ground-truth-recording)
 - [Getting Started](#getting-started)
    * [Requirements](#requirements)
    * [Initial setup](#initial-setup)
@@ -50,9 +52,16 @@ The forked repo also offers an ability to obtain inferences using a pretrained U
    * [Changelog](#changelog)
    * [Known issues](#known-issues)
 
-## Example model inference
+## AC Voice Examples
+### Model Inference
+
+Please see the following example model inference for a passage not within the training set (not recorded).
 
 [seashells_AC.wav](https://github.com/acharabin/DeepLearningExamples/tree/temp/PyTorch/SpeechSynthesis/Tacotron2/audio/seashells_AC.wav)
+
+### Ground Truth Recording
+
+[AC_1.wav](https://github.com/acharabin/DeepLearningExamples/blob/master/PyTorch/SpeechSynthesis/Tacotron2/AC-Voice-Cloning-Data/wavs/train/AC_1.wav)
 
 ## Getting Started
 ### Requirements
