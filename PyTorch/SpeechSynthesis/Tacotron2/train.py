@@ -84,10 +84,13 @@ def parse_args(parser):
     # analytics
     parser.add_argument('--upload-epoch-loss-to-s3', action='store_true',
                           help='Upload epoch training and validation loss to s3 at the end of each epoch')
-    #parser.add_argument('--epoch-get-loss-ratio', default=1,
-                          #type=int, help='epoch training loss will be derived for epochs divisible by this number')
     parser.add_argument('--print-passage-loss', action='store_true',
                           help='Prints loss for each passage in the batch ordered by text length')
+    parser.add_argument('--get-epoch-train-loss-at-final-it', action='store_true',
+                          help='If selected, will recompute the training loss using the latest model parameters')
+    # If the above option is selected, the following parameters become relevant and have preset values
+    #parser.add_argument('--epoch-get-loss-ratio', default=1,
+                          #type=int, help='epoch training loss will be derived for epochs divisible by this number')
     parser.add_argument('-els','--epoch-loss-samples', default=1249, type=int,
                           help='Number of random samples for calculation of epoch training loss')
     parser.add_argument('-elbs','--epoch-loss-batch-size', default=49, type=int,
@@ -593,6 +596,8 @@ def main():
                 DLLogger.log(step=(epoch, i),
                          data={'glob_iter/iters_per_epoch': str(iteration)+"/"+str(len(train_loader))})
 
+                if i==0: epoch_train_loss = 0
+
                 adjust_learning_rate(iteration, epoch, optimizer, args.learning_rate,
                                  args.anneal_steps, args.anneal_factor, local_rank)
             
@@ -621,6 +626,8 @@ def main():
                     reduced_num_items = num_items.item()
                 if np.isnan(reduced_loss):
                     raise Exception("loss is NaN")
+
+                epoch_train_loss += reduced_loss
             
                 DLLogger.log(step=(epoch,i), data={'train_loss': reduced_loss})
 
@@ -660,8 +667,23 @@ def main():
 
         DLLogger.log(step=(epoch,), data={'train_items_per_sec':
                                           (train_epoch_items_per_sec/num_iters if num_iters > 0 else 0.0)})
-        #DLLogger.log(step=(epoch,), data={'train_loss': reduced_loss})
         DLLogger.log(step=(epoch,), data={'train_epoch_time': epoch_time})
+
+        # Get Epoch Training Loss
+
+        epoch_train_loss /= num_iters
+
+        if args.get_epoch_train_loss_at_final_it:
+            epoch_train_loss, epoch_loss_items_per_sec = validate(model, criterion, trainset, epoch,
+                                               iteration, args.epoch_loss_batch_size,
+                                               world_size, collate_fn,
+                                               distributed_run, args.bench_class=="perf-train",
+                                               batch_to_gpu,
+                                               args.amp,
+                                               args.loss_function,
+                                               args.epoch_loss_samples)
+
+        DLLogger.log(step=(epoch,), data={'train_loss': epoch_train_loss})
         
         # Get Epoch Validation Loss
 
@@ -675,8 +697,9 @@ def main():
                                                args.epoch_loss_samples)
         
         # Get Epoch Training Loss
-
-        reduced_loss, epoch_loss_items_per_sec = validate(model, criterion, trainset, epoch,
+        
+        if args.get_epoch_train_loss_at_final_it:
+            epoch_train_loss, epoch_loss_items_per_sec = validate(model, criterion, trainset, epoch,
                                                iteration, args.epoch_loss_batch_size,
                                                world_size, collate_fn,
                                                distributed_run, args.bench_class=="perf-train",
@@ -728,7 +751,7 @@ def main():
     run_time = run_stop_time - run_start_time
     DLLogger.log(step=tuple(), data={'run_time': run_time})
     DLLogger.log(step=tuple(), data={'val_loss': val_loss})
-    DLLogger.log(step=tuple(), data={'train_loss': reduced_loss})
+    DLLogger.log(step=tuple(), data={'train_loss': epoch_train_loss})
     DLLogger.log(step=tuple(), data={'train_items_per_sec':
                                      (train_epoch_items_per_sec/num_iters if num_iters > 0 else 0.0)})
     DLLogger.log(step=tuple(), data={'val_items_per_sec': val_items_per_sec})

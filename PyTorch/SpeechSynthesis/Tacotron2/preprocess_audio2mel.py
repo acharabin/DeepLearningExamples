@@ -42,7 +42,7 @@ def audio2mel(dataset_path, audiopaths_and_text, melpaths_and_text, args):
     melpaths_and_text_list = load_filepaths_and_text(dataset_path, melpaths_and_text)
     audiopaths_and_text_list = load_filepaths_and_text(dataset_path, audiopaths_and_text)
 
-    data_loader = TextMelLoader(dataset_path, audiopaths_and_text, args)
+    data_loader = TextMelLoader(dataset_path, audiopaths_and_text, True, args)
 
     for i in range(len(melpaths_and_text_list)):
         if i%100 == 0:
