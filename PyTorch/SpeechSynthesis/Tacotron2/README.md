@@ -226,6 +226,7 @@ The following command can be used to get an inference with a Tacotron2 and Univn
 
 ```bash
 python inference.py --tacotron2 <Tacotron2_checkpoint> -v 'univnet' --univnet <univnet_checkpoint> -uc <univnet config file> -o output/inference/ -i phrases/phrase.txt --upload-to-s3 --suffix _letters --fp16
+```
 
 --upload-to-s3 should be removed if s3 credentials weren't added in the .env file.
 
