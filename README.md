@@ -1,1 +1,1 @@
-Please go to the [Tacotron2](https://github.com/acharabin/DeepLearningExamples/tree/master/PyTorch/SpeechSynthesis/Tacotron2) directory for information on the changes  made and additions to the repository. 
+Please go to the [Tacotron2](https://github.com/acharabin/DeepLearningExamples/tree/master/PyTorch/SpeechSynthesis/Tacotron2) directory for information on the changes and additions made to the repository. 
